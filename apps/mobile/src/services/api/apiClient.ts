@@ -1,4 +1,4 @@
-import { HexAddress } from '@freelancerx/shared';
+import { HexAddress, ProposedMilestone } from '@freelancerx/shared';
 
 const API_BASE_URL = 'http://10.0.2.2:4000'; // Android emulator localhost alias or configurable URL
 
@@ -115,5 +115,75 @@ export class ApiClient {
 
   public static async getUserByAddress(address: string): Promise<{ success: boolean; user: any }> {
     return this.request(`/users/${address}`);
+  }
+
+  // Jobs Endpoints
+  public static async listJobs(params: {
+    query?: string;
+    skill?: string;
+    minBudget?: number;
+    maxBudget?: number;
+    page?: number;
+    limit?: number;
+  } = {}): Promise<{ success: boolean; jobs: any[]; pagination: any }> {
+    const searchParams = new URLSearchParams();
+    if (params.query) searchParams.append('query', params.query);
+    if (params.skill) searchParams.append('skill', params.skill);
+    if (params.minBudget) searchParams.append('minBudget', String(params.minBudget));
+    if (params.maxBudget) searchParams.append('maxBudget', String(params.maxBudget));
+    if (params.page) searchParams.append('page', String(params.page));
+    if (params.limit) searchParams.append('limit', String(params.limit));
+
+    const qs = searchParams.toString();
+    return this.request(`/jobs${qs ? `?${qs}` : ''}`);
+  }
+
+  public static async createJob(data: {
+    title: string;
+    description: string;
+    skills: string[];
+    budgetUsdc: string;
+    estimatedDurationDays?: number;
+  }): Promise<{ success: boolean; job: any }> {
+    return this.request('/jobs', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  public static async getJobById(jobId: string): Promise<{ success: boolean; job: any }> {
+    return this.request(`/jobs/${jobId}`);
+  }
+
+  // Proposals Endpoints
+  public static async submitProposal(
+    jobId: string,
+    data: {
+      coverLetter: string;
+      proposedPriceUsdc: string;
+      proposedDurationDays: number;
+      proposedMilestones: ProposedMilestone[];
+    }
+  ): Promise<{ success: boolean; proposal: any }> {
+    return this.request(`/jobs/${jobId}/proposals`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  public static async getProposalsByJob(jobId: string): Promise<{ success: boolean; proposals: any[] }> {
+    return this.request(`/jobs/${jobId}/proposals`);
+  }
+
+  public static async acceptProposal(proposalId: string): Promise<{ success: boolean; proposal: any; project: any }> {
+    return this.request(`/proposals/${proposalId}/accept`, {
+      method: 'POST',
+    });
+  }
+
+  public static async rejectProposal(proposalId: string): Promise<{ success: boolean; proposal: any }> {
+    return this.request(`/proposals/${proposalId}/reject`, {
+      method: 'POST',
+    });
   }
 }

@@ -15,8 +15,8 @@
 | **Phase 1** | Repository & Monorepo Environment Setup | ✅ Done | 100% |
 | **Phase 2** | Android Foundation + Wallet & Blockchain POC | ✅ Done | 100% |
 | **Phase 3** | Backend Architecture, Auth & PostgreSQL Database | ✅ Done | 100% |
-| **Phase 4** | Freelance Marketplace Core (Jobs, Proposals, Profiles) | 🟡 Next Up | 0% |
-| **Phase 5** | Smart Contracts (Foundry, USDC Escrow, 2-of-3 Multisig) | ⏳ Planned | 0% |
+| **Phase 4** | Freelance Marketplace Core (Jobs, Proposals, Profiles) | ✅ Done | 100% |
+| **Phase 5** | Smart Contracts (Foundry, USDC Escrow, 2-of-3 Multisig) | 🟡 Next Up | 0% |
 | **Phase 6** | Testnet Deployment (Base Sepolia) + viem Indexer | ⏳ Planned | 0% |
 | **Phase 7** | Escrow End-to-End Integration (Mobile + Escrow + Indexer) | ⏳ Planned | 0% |
 | **Phase 8** | Project & Milestone Management Dashboard | ⏳ Planned | 0% |
@@ -45,16 +45,25 @@
 - [x] Implemented Base Sepolia status query and ERC-20 USDC balance reading service
 - [x] Implemented Wallet Service for connection, test account handling, and SIWE signature signing
 - [x] Built [WalletPOCScreen.tsx](file:///e:/Smart%20Contracts/freelanceX/apps/mobile/src/screens/wallet/WalletPOCScreen.tsx) with interactive wallet connection, live block number retrieval, USDC balance check, and SIWE cryptographic signature generation
-- [x] Configured root [App.tsx](file:///e:/Smart%20Contracts/freelanceX/apps/mobile/App.tsx)
 
 ### [Phase 3: Backend + Database] — ✅ COMPLETED
 - [x] Implemented SIWE Nonce Generation & Signature Verification with `viem` & single-use expiration ([auth.service.ts](file:///e:/Smart%20Contracts/freelanceX/apps/backend/src/modules/auth/auth.service.ts))
 - [x] Implemented Session Management & JWT issuance middleware ([auth.ts](file:///e:/Smart%20Contracts/freelanceX/apps/backend/src/middleware/auth.ts))
 - [x] Implemented Dual-Sided User Profile management APIs (`/users/me`, `/users/me/freelancer`, `/users/me/client`, `/users/:address`, `/users/me/portfolio`) ([users.service.ts](file:///e:/Smart%20Contracts/freelanceX/apps/backend/src/modules/users/users.service.ts))
 - [x] Created Mobile [ApiClient.ts](file:///e:/Smart%20Contracts/freelanceX/apps/mobile/src/services/api/apiClient.ts) connecting React Native app to backend auth and profile endpoints
-- [x] Integrated SIWE auth and live profile updates into [WalletPOCScreen.tsx](file:///e:/Smart%20Contracts/freelanceX/apps/mobile/src/screens/wallet/WalletPOCScreen.tsx)
 
-### [Phase 4: Freelance Marketplace Core] — 🟡 READY TO START
-- [ ] Implement Jobs module in backend (`GET /jobs`, `POST /jobs`, `GET /jobs/:id`, `POST /jobs/:id/close`)
-- [ ] Implement Proposals module in backend (`POST /jobs/:id/proposals`, `GET /jobs/:id/proposals`, `POST /proposals/:id/accept`, `POST /proposals/:id/reject`)
-- [ ] Implement Marketplace UI screens in mobile (`JobsFeedScreen`, `JobDetailScreen`, `CreateJobScreen`, `ProposalSubmitScreen`)
+### [Phase 4: Freelance Marketplace Core] — ✅ COMPLETED
+- [x] Implemented Jobs module in backend (`GET /jobs`, `POST /jobs`, `GET /jobs/:id`, `POST /jobs/:id/close`) ([jobs.service.ts](file:///e:/Smart%20Contracts/freelanceX/apps/backend/src/modules/jobs/jobs.service.ts))
+- [x] Implemented Proposals module in backend (`POST /jobs/:id/proposals`, `GET /jobs/:id/proposals`, `POST /proposals/:id/accept`, `POST /proposals/:id/reject`) ([proposals.service.ts](file:///e:/Smart%20Contracts/freelanceX/apps/backend/src/modules/proposals/proposals.service.ts))
+- [x] Implemented atomic proposal acceptance initializing Project + Milestones in PostgreSQL
+- [x] Built Mobile Marketplace UI screens:
+  - [JobsFeedScreen.tsx](file:///e:/Smart%20Contracts/freelanceX/apps/mobile/src/screens/jobs/JobsFeedScreen.tsx) (search, filter, USDC budget tags, quick apply)
+  - [CreateJobScreen.tsx](file:///e:/Smart%20Contracts/freelanceX/apps/mobile/src/screens/jobs/CreateJobScreen.tsx) (job posting form with budget & duration)
+  - [ProposalSubmitScreen.tsx](file:///e:/Smart%20Contracts/freelanceX/apps/mobile/src/screens/proposals/ProposalSubmitScreen.tsx) (proposal submission with custom milestones)
+  - [ClientProposalsScreen.tsx](file:///e:/Smart%20Contracts/freelanceX/apps/mobile/src/screens/proposals/ClientProposalsScreen.tsx) (client review, hiring & project initialization)
+
+### [Phase 5: Smart Contracts] — 🟡 READY TO START
+- [ ] Implement `FreelancerEscrow.sol` (Non-upgradeable, USDC ERC20, milestone deposits & releases)
+- [ ] Implement 2-of-3 Multisig Arbitration resolution on-chain
+- [ ] Write Foundry Unit Tests, Invariant Tests & Fuzzing (`FreelancerEscrow.t.sol`)
+- [ ] Verify test execution against Anvil / local Foundry test suite

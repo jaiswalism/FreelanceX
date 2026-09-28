@@ -5,6 +5,8 @@ import morgan from 'morgan';
 import { config } from './config/index.js';
 import authRoutes from './modules/auth/auth.routes.js';
 import userRoutes from './modules/users/users.routes.js';
+import jobsRoutes from './modules/jobs/jobs.routes.js';
+import proposalsRoutes from './modules/proposals/proposals.routes.js';
 
 const app = express();
 
@@ -16,6 +18,8 @@ app.use(morgan('dev'));
 // Route groups
 app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
+app.use('/jobs', jobsRoutes);
+app.use('/', proposalsRoutes);
 
 // Health check endpoint
 app.get('/health', (_req: Request, res: Response) => {
