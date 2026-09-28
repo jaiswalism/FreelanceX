@@ -5,7 +5,6 @@ import {
   Text,
   TextInputProps,
   ViewStyle,
-  TextStyle,
 } from 'react-native';
 import { defaultTheme } from '../theme/index.js';
 
