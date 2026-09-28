@@ -1,0 +1,26 @@
+{
+  "name": "freelancerx-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,sol}\"",
+    "contracts:build": "npm run build --workspace=@freelancerx/contracts",
+    "contracts:test": "npm run test --workspace=@freelancerx/contracts",
+    "backend:dev": "npm run dev --workspace=@freelancerx/backend",
+    "backend:build": "npm run build --workspace=@freelancerx/backend",
+    "mobile:android": "npm run android --workspace=@freelancerx/mobile",
+    "mobile:start": "npm run start --workspace=@freelancerx/mobile"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.3"
+  }
+}
