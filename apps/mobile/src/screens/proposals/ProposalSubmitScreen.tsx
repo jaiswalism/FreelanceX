@@ -28,7 +28,7 @@ export const ProposalSubmitScreen: React.FC<ProposalSubmitScreenProps> = ({
   const [coverLetter, setCoverLetter] = useState('');
   const [proposedPriceUsdc, setProposedPriceUsdc] = useState(job?.budgetUsdc || '1000');
   const [proposedDurationDays, setProposedDurationDays] = useState('14');
-  const [milestones, setMilestones] = useState<ProposedMilestone[]>([
+  const [milestones] = useState<ProposedMilestone[]>([
     {
       description: 'Milestone 1: Architectural Design & Core Contract Implementation',
       amountUsdc: '500',

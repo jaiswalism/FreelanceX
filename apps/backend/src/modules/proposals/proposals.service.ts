@@ -1,6 +1,5 @@
 import { prisma } from '../../database/prisma.js';
 import { parseUnits } from 'viem';
-import { ProposalStatus, ProjectStatus, MilestoneStatus, JobStatus } from '@prisma/client';
 import { ProposedMilestone } from '@freelancerx/shared';
 import { config } from '../../config/index.js';
 
@@ -26,7 +25,7 @@ export class ProposalsService {
       throw new Error('Job not found');
     }
 
-    if (job.status !== JobStatus.OPEN) {
+    if (job.status !== 'OPEN') {
       throw new Error('Job is no longer open for proposals');
     }
 
@@ -54,7 +53,7 @@ export class ProposalsService {
         proposedPriceUsdc: data.proposedPriceUsdc,
         proposedDurationDays: data.proposedDurationDays,
         milestonePlan: data.proposedMilestones as any,
-        status: ProposalStatus.PENDING,
+        status: 'PENDING',
       },
       include: {
         freelancer: {
@@ -125,7 +124,7 @@ export class ProposalsService {
       throw new Error('Only the client can accept this proposal');
     }
 
-    if (proposal.status !== ProposalStatus.PENDING) {
+    if (proposal.status !== 'PENDING') {
       throw new Error(`Proposal cannot be accepted from state: ${proposal.status}`);
     }
 
@@ -133,11 +132,11 @@ export class ProposalsService {
     const totalAmountBaseUnits = parseUnits(proposal.proposedPriceUsdc.toString(), 6).toString();
 
     // Use Prisma interactive transaction to guarantee atomicity
-    return prisma.$transaction(async (tx) => {
+    return prisma.$transaction(async (tx: any) => {
       // 1. Mark proposal as ACCEPTED
       const updatedProposal = await tx.proposal.update({
         where: { id: proposalId },
-        data: { status: ProposalStatus.ACCEPTED },
+        data: { status: 'ACCEPTED' },
       });
 
       // 2. Reject other proposals for this job
@@ -146,13 +145,13 @@ export class ProposalsService {
           jobId: proposal.jobId,
           id: { not: proposalId },
         },
-        data: { status: ProposalStatus.REJECTED },
+        data: { status: 'REJECTED' },
       });
 
       // 3. Mark job as IN_PROGRESS
       await tx.job.update({
         where: { id: proposal.jobId },
-        data: { status: JobStatus.IN_PROGRESS },
+        data: { status: 'IN_PROGRESS' },
       });
 
       // 4. Create Project with milestones
@@ -166,7 +165,7 @@ export class ProposalsService {
           totalAmountUsdc: proposal.proposedPriceUsdc,
           totalAmountBaseUnits,
           escrowContractAddress: config.escrowAddress,
-          status: ProjectStatus.INITIALIZED,
+          status: 'INITIALIZED',
           milestones: {
             create: milestonePlan.map((m, idx) => ({
               index: idx,
@@ -174,7 +173,7 @@ export class ProposalsService {
               description: m.description,
               amountUsdc: m.amountUsdc,
               amountBaseUnits: parseUnits(m.amountUsdc, 6).toString(),
-              status: MilestoneStatus.PENDING,
+              status: 'PENDING',
             })),
           },
         },
@@ -211,7 +210,7 @@ export class ProposalsService {
 
     return prisma.proposal.update({
       where: { id: proposalId },
-      data: { status: ProposalStatus.REJECTED },
+      data: { status: 'REJECTED' },
     });
   }
 }

@@ -1,6 +1,6 @@
 import { prisma } from '../../database/prisma.js';
 import { parseUnits } from 'viem';
-import { JobStatus } from '@prisma/client';
+import { JobStatus } from '@freelancerx/shared';
 
 export class JobsService {
   /**
@@ -20,7 +20,7 @@ export class JobsService {
     const skip = (page - 1) * limit;
 
     const where: any = {
-      status: params.status || JobStatus.OPEN,
+      status: params.status || 'OPEN',
     };
 
     if (params.query) {
@@ -63,7 +63,7 @@ export class JobsService {
     ]);
 
     return {
-      jobs: jobs.map((j) => ({
+      jobs: jobs.map((j: any) => ({
         ...j,
         proposalsCount: j._count.proposals,
       })),
@@ -101,7 +101,7 @@ export class JobsService {
         budgetUsdc: data.budgetUsdc,
         budgetBaseUnits,
         estimatedDurationDays: data.estimatedDurationDays,
-        status: JobStatus.OPEN,
+        status: 'OPEN',
       },
       include: {
         client: {
@@ -184,7 +184,7 @@ export class JobsService {
 
     return prisma.job.update({
       where: { id: jobId },
-      data: { status: JobStatus.CANCELLED },
+      data: { status: 'CANCELLED' },
     });
   }
 }

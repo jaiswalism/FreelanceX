@@ -1,8 +1,7 @@
 import { Request, Response } from 'express';
 import { JobsService } from './jobs.service.js';
 import { AuthenticatedRequest } from '../../middleware/auth.js';
-import { CreateJobSchema } from '@freelancerx/shared';
-import { JobStatus } from '@prisma/client';
+import { CreateJobSchema, JobStatus } from '@freelancerx/shared';
 
 export class JobsController {
   static async listJobs(req: Request, res: Response): Promise<void> {
