@@ -16,8 +16,8 @@
 | **Phase 2** | Android Foundation + Wallet & Blockchain POC | ✅ Done | 100% |
 | **Phase 3** | Backend Architecture, Auth & PostgreSQL Database | ✅ Done | 100% |
 | **Phase 4** | Freelance Marketplace Core (Jobs, Proposals, Profiles) | ✅ Done | 100% |
-| **Phase 5** | Smart Contracts (Foundry, USDC Escrow, 2-of-3 Multisig) | 🟡 Next Up | 0% |
-| **Phase 6** | Testnet Deployment (Base Sepolia) + viem Indexer | ⏳ Planned | 0% |
+| **Phase 5** | Smart Contracts (Foundry, USDC Escrow, 2-of-3 Multisig) | ✅ Done | 100% |
+| **Phase 6** | Testnet Deployment (Base Sepolia) + viem Indexer | 🟡 Next Up | 0% |
 | **Phase 7** | Escrow End-to-End Integration (Mobile + Escrow + Indexer) | ⏳ Planned | 0% |
 | **Phase 8** | Project & Milestone Management Dashboard | ⏳ Planned | 0% |
 | **Phase 9** | Verifiable Reputation & On-Chain History Anchors | ⏳ Planned | 0% |
@@ -62,8 +62,21 @@
   - [ProposalSubmitScreen.tsx](file:///e:/Smart%20Contracts/freelanceX/apps/mobile/src/screens/proposals/ProposalSubmitScreen.tsx) (proposal submission with custom milestones)
   - [ClientProposalsScreen.tsx](file:///e:/Smart%20Contracts/freelanceX/apps/mobile/src/screens/proposals/ClientProposalsScreen.tsx) (client review, hiring & project initialization)
 
-### [Phase 5: Smart Contracts] — 🟡 READY TO START
-- [ ] Implement `FreelancerEscrow.sol` (Non-upgradeable, USDC ERC20, milestone deposits & releases)
-- [ ] Implement 2-of-3 Multisig Arbitration resolution on-chain
-- [ ] Write Foundry Unit Tests, Invariant Tests & Fuzzing (`FreelancerEscrow.t.sol`)
-- [ ] Verify test execution against Anvil / local Foundry test suite
+### [Phase 5: Smart Contracts] — ✅ COMPLETED
+- [x] Implemented [FreelancerEscrow.sol](file:///e:/Smart%20Contracts/freelanceX/packages/contracts/src/FreelancerEscrow.sol):
+  - Non-upgradeable milestone-based escrow
+  - OpenZeppelin SafeERC20 USDC transfers
+  - 2-of-3 Multisig arbitration resolution with cryptographic ECDSA threshold verification
+  - Event emissions: `ProjectCreated`, `ProjectFunded`, `MilestoneSubmitted`, `RevisionRequested`, `MilestoneApproved`, `PaymentReleased`, `DisputeRaised`, `DisputeResolved`, `ProjectCompleted`
+- [x] Implemented [MockUSDC.sol](file:///e:/Smart%20Contracts/freelanceX/packages/contracts/test/mocks/MockUSDC.sol)
+- [x] Built comprehensive Foundry Test Suite [FreelancerEscrow.t.sol](file:///e:/Smart%20Contracts/freelanceX/packages/contracts/test/FreelancerEscrow.t.sol) with 100% test pass rate:
+  - Milestone approvals & release invariants
+  - Revision request & resubmission state transitions
+  - 2-of-3 multisig resolution splits & replay protection
+  - Unauthorized caller reverts
+  - Fuzzing for milestone sum invariants
+
+### [Phase 6: Testnet Deployment + Indexer] — 🟡 READY TO START
+- [ ] Create Foundry deployment scripts for Base Sepolia (`DeployEscrow.s.sol`)
+- [ ] Implement backend viem blockchain event indexer worker (`apps/backend/src/blockchain/indexer/`)
+- [ ] Test log ingestion, confirmations, duplicate event handling, and PostgreSQL event table sync
