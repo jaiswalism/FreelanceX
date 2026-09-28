@@ -8,12 +8,14 @@ import {
   Alert,
 } from 'react-native';
 import { defaultTheme } from '../../theme/index.js';
-import { Header, Card, Button, Badge } from '../../components/index.js';
+import { Header, Card, Button, Badge, Input } from '../../components/index.js';
 import { WalletService } from '../../services/wallet/walletService.js';
 import {
   fetchChainStatus,
   fetchUsdcBalance,
 } from '../../services/blockchain/client.js';
+import { ApiClient } from '../../services/api/apiClient.js';
+import { HexAddress } from '@freelancerx/shared';
 
 export const WalletPOCScreen: React.FC = () => {
   const { colors, typography, spacing } = defaultTheme;
@@ -24,6 +26,8 @@ export const WalletPOCScreen: React.FC = () => {
   const [usdcBalance, setUsdcBalance] = useState<string | null>(null);
   const [signedMessage, setSignedMessage] = useState<string | null>(null);
   const [signature, setSignature] = useState<string | null>(null);
+  const [authenticatedUser, setAuthenticatedUser] = useState<any | null>(null);
+  const [freelancerBio, setFreelancerBio] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [statusMsg, setStatusMsg] = useState<string>('Ready to test Base Sepolia integration');
 
@@ -35,7 +39,7 @@ export const WalletPOCScreen: React.FC = () => {
       setConnectedAddress(res.address);
       setChainId(res.chainId);
       setStatusMsg(`Connected: ${res.address.slice(0, 8)}...${res.address.slice(-6)}`);
-      
+
       // Auto-query chain status
       await handleQueryChain();
     } catch (err) {
@@ -63,14 +67,14 @@ export const WalletPOCScreen: React.FC = () => {
         const bal = await fetchUsdcBalance(connectedAddress as `0x${string}`);
         setUsdcBalance(bal.formatted);
       }
-    } catch (err) {
+    } catch {
       setStatusMsg('RPC Query failed.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSignMessage = async () => {
+  const handleSignAndAuthenticate = async () => {
     if (!connectedAddress) {
       Alert.alert('Connect Wallet', 'Please connect a wallet first.');
       return;
@@ -78,34 +82,81 @@ export const WalletPOCScreen: React.FC = () => {
 
     try {
       setLoading(true);
-      const testMsg = `FreelancerX Auth Nonce: ${Date.now()}\nAddress: ${connectedAddress}\nChainId: 84532`;
-      setSignedMessage(testMsg);
-      const sig = await WalletService.signMessage(testMsg);
+      setStatusMsg('1/3 Requesting SIWE nonce from backend...');
+      
+      // 1. Request nonce from backend
+      const nonceRes = await ApiClient.requestNonce(connectedAddress as HexAddress);
+      setStatusMsg(`2/3 Nonce received (${nonceRes.nonce.slice(0, 10)}...). Signing message...`);
+
+      // 2. Sign message
+      setSignedMessage(nonceRes.message);
+      const sig = await WalletService.signMessage(nonceRes.message);
       setSignature(sig);
-      setStatusMsg('Message signed cryptographically with private key.');
+
+      // 3. Verify signature with backend
+      setStatusMsg('3/3 Verifying signature & issuing JWT session...');
+      const verifyRes = await ApiClient.verifySignature(
+        connectedAddress as HexAddress,
+        sig,
+        nonceRes.nonce
+      );
+
+      setAuthenticatedUser(verifyRes.user);
+      if (verifyRes.user?.freelancerProfile?.bio) {
+        setFreelancerBio(verifyRes.user.freelancerProfile.bio);
+      }
+      setStatusMsg('Authenticated successfully! Session token active.');
     } catch (err) {
-      Alert.alert('Signing Failed', err instanceof Error ? err.message : 'Unknown error');
+      Alert.alert('Authentication Failed', err instanceof Error ? err.message : 'Unknown error');
+      setStatusMsg('SIWE Authentication failed.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDisconnect = () => {
+  const handleUpdateProfile = async () => {
+    try {
+      setLoading(true);
+      setStatusMsg('Updating profile on PostgreSQL backend...');
+      const updated = await ApiClient.updateFreelancerProfile({
+        bio: freelancerBio,
+        title: 'Full-Stack Smart Contract Engineer',
+        skills: ['Solidity', 'React Native', 'TypeScript', 'Foundry'],
+      });
+      setStatusMsg('Freelancer profile updated successfully!');
+      Alert.alert('Profile Updated', `Bio saved: "${updated.profile.bio}"`);
+    } catch (err) {
+      Alert.alert('Update Failed', err instanceof Error ? err.message : 'Unknown error');
+      setStatusMsg('Profile update failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    try {
+      if (ApiClient.getToken()) {
+        await ApiClient.logout();
+      }
+    } catch {
+      // ignore
+    }
     WalletService.disconnect();
     setConnectedAddress(null);
     setBlockNumber(null);
     setUsdcBalance(null);
     setSignedMessage(null);
     setSignature(null);
-    setStatusMsg('Wallet disconnected.');
+    setAuthenticatedUser(null);
+    setStatusMsg('Wallet disconnected & session cleared.');
   };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background.app }}>
       <StatusBar barStyle="light-content" backgroundColor={colors.background.secondary} />
       <Header
-        title="Base Sepolia POC"
-        subtitle="Phase 2 Wallet & Contract Integration"
+        title="FreelancerX"
+        subtitle="Phase 2/3: Wallet + SIWE Auth + Backend"
         walletAddress={connectedAddress || undefined}
         networkName="Base Sepolia (84532)"
       />
@@ -197,22 +248,25 @@ export const WalletPOCScreen: React.FC = () => {
           <Button title="Refresh Block & Balance" onPress={handleQueryChain} variant="secondary" loading={loading} />
         </Card>
 
-        {/* Cryptographic SIWE Signature Card */}
+        {/* Cryptographic SIWE Authentication Card */}
         <Card>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <Text style={{ color: colors.text.primary, fontSize: typography.scale.heading3.fontSize, fontWeight: '700' }}>
-              3. SIWE Signature Test
+              3. SIWE Authentication
             </Text>
-            <Badge label={signature ? 'Verified' : 'Pending'} variant={signature ? 'success' : 'warning'} />
+            <Badge
+              label={authenticatedUser ? 'JWT Active' : signature ? 'Signed' : 'Unauthenticated'}
+              variant={authenticatedUser ? 'success' : signature ? 'brand' : 'warning'}
+            />
           </View>
 
           <Text style={{ color: colors.text.secondary, fontSize: typography.scale.body.fontSize, marginBottom: 12 }}>
-            Signs a structured SIWE authentication challenge using the wallet's ECDSA private key.
+            Requests a cryptographic nonce from Node.js backend, signs it via ECDSA, and verifies into a PostgreSQL session.
           </Text>
 
           {signature && (
             <View style={{ gap: 6, marginBottom: 16 }}>
-              <Text style={{ color: colors.text.secondary, fontSize: typography.scale.caption.fontSize }}>Message:</Text>
+              <Text style={{ color: colors.text.secondary, fontSize: typography.scale.caption.fontSize }}>Signed Message:</Text>
               <Text
                 style={{
                   color: colors.text.primary,
@@ -245,12 +299,37 @@ export const WalletPOCScreen: React.FC = () => {
           )}
 
           <Button
-            title="Sign SIWE Message"
-            onPress={handleSignMessage}
+            title={authenticatedUser ? 'Re-Authenticate Wallet' : 'Sign & Authenticate (SIWE)'}
+            onPress={handleSignAndAuthenticate}
             disabled={!connectedAddress}
             loading={loading}
           />
         </Card>
+
+        {/* Profile Management Card (Active after Auth) */}
+        {authenticatedUser && (
+          <Card>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <Text style={{ color: colors.text.primary, fontSize: typography.scale.heading3.fontSize, fontWeight: '700' }}>
+                4. Dual-Sided Profile
+              </Text>
+              <Badge label="PostgreSQL Verified" variant="success" />
+            </View>
+
+            <Input
+              label="Freelancer Bio"
+              value={freelancerBio}
+              onChangeText={setFreelancerBio}
+              placeholder="e.g. Senior Smart Contract & Mobile Developer"
+            />
+
+            <Button
+              title="Save Profile to Backend"
+              onPress={handleUpdateProfile}
+              loading={loading}
+            />
+          </Card>
+        )}
 
         {/* System Activity Status Footer */}
         <View
@@ -270,7 +349,11 @@ export const WalletPOCScreen: React.FC = () => {
               width: 8,
               height: 8,
               borderRadius: 4,
-              backgroundColor: connectedAddress ? colors.semantic.success : colors.semantic.warning,
+              backgroundColor: authenticatedUser
+                ? colors.semantic.success
+                : connectedAddress
+                ? colors.brand.primary
+                : colors.semantic.warning,
             }}
           />
           <Text

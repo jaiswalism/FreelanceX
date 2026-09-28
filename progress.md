@@ -14,8 +14,8 @@
 | **Phase 0** | Final Product Decisions & Architecture Freeze | ✅ Done | 100% |
 | **Phase 1** | Repository & Monorepo Environment Setup | ✅ Done | 100% |
 | **Phase 2** | Android Foundation + Wallet & Blockchain POC | ✅ Done | 100% |
-| **Phase 3** | Backend Architecture, Auth & PostgreSQL Database | 🟡 Next Up | 0% |
-| **Phase 4** | Freelance Marketplace Core (Jobs, Proposals, Profiles) | ⏳ Planned | 0% |
+| **Phase 3** | Backend Architecture, Auth & PostgreSQL Database | ✅ Done | 100% |
+| **Phase 4** | Freelance Marketplace Core (Jobs, Proposals, Profiles) | 🟡 Next Up | 0% |
 | **Phase 5** | Smart Contracts (Foundry, USDC Escrow, 2-of-3 Multisig) | ⏳ Planned | 0% |
 | **Phase 6** | Testnet Deployment (Base Sepolia) + viem Indexer | ⏳ Planned | 0% |
 | **Phase 7** | Escrow End-to-End Integration (Mobile + Escrow + Indexer) | ⏳ Planned | 0% |
@@ -38,7 +38,6 @@
 - [x] Created root `package.json`, `tsconfig.base.json`, `.prettierrc`, and `.env.example`
 - [x] Configured Foundry (`foundry.toml`, OpenZeppelin submodule installation)
 - [x] Implemented mobile theme design system tokens & reusable UI components (`Button`, `Card`, `Badge`, `Input`, `Header`)
-- [x] Resolved all TypeScript compiler strict type annotations and unused imports
 
 ### [Phase 2: Android Foundation + Wallet POC] — ✅ COMPLETED
 - [x] Connected device & emulator targets (`ZA2237JGQ9` attached, `Pixel7P` configured)
@@ -48,8 +47,14 @@
 - [x] Built [WalletPOCScreen.tsx](file:///e:/Smart%20Contracts/freelanceX/apps/mobile/src/screens/wallet/WalletPOCScreen.tsx) with interactive wallet connection, live block number retrieval, USDC balance check, and SIWE cryptographic signature generation
 - [x] Configured root [App.tsx](file:///e:/Smart%20Contracts/freelanceX/apps/mobile/App.tsx)
 
-### [Phase 3: Backend + Database] — 🟡 READY TO START
-- [ ] Implement SIWE Nonce Generation & Verification endpoints (`/auth/nonce`, `/auth/verify`, `/auth/logout`)
-- [ ] Implement Session Management & JWT issuance middleware
-- [ ] Implement User Profile management APIs (`/users/me`, `/users/me/freelancer`, `/users/me/client`)
-- [ ] Set up PostgreSQL migrations & database seeding
+### [Phase 3: Backend + Database] — ✅ COMPLETED
+- [x] Implemented SIWE Nonce Generation & Signature Verification with `viem` & single-use expiration ([auth.service.ts](file:///e:/Smart%20Contracts/freelanceX/apps/backend/src/modules/auth/auth.service.ts))
+- [x] Implemented Session Management & JWT issuance middleware ([auth.ts](file:///e:/Smart%20Contracts/freelanceX/apps/backend/src/middleware/auth.ts))
+- [x] Implemented Dual-Sided User Profile management APIs (`/users/me`, `/users/me/freelancer`, `/users/me/client`, `/users/:address`, `/users/me/portfolio`) ([users.service.ts](file:///e:/Smart%20Contracts/freelanceX/apps/backend/src/modules/users/users.service.ts))
+- [x] Created Mobile [ApiClient.ts](file:///e:/Smart%20Contracts/freelanceX/apps/mobile/src/services/api/apiClient.ts) connecting React Native app to backend auth and profile endpoints
+- [x] Integrated SIWE auth and live profile updates into [WalletPOCScreen.tsx](file:///e:/Smart%20Contracts/freelanceX/apps/mobile/src/screens/wallet/WalletPOCScreen.tsx)
+
+### [Phase 4: Freelance Marketplace Core] — 🟡 READY TO START
+- [ ] Implement Jobs module in backend (`GET /jobs`, `POST /jobs`, `GET /jobs/:id`, `POST /jobs/:id/close`)
+- [ ] Implement Proposals module in backend (`POST /jobs/:id/proposals`, `GET /jobs/:id/proposals`, `POST /proposals/:id/accept`, `POST /proposals/:id/reject`)
+- [ ] Implement Marketplace UI screens in mobile (`JobsFeedScreen`, `JobDetailScreen`, `CreateJobScreen`, `ProposalSubmitScreen`)

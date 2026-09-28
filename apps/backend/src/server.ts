@@ -3,6 +3,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import { config } from './config/index.js';
+import authRoutes from './modules/auth/auth.routes.js';
+import userRoutes from './modules/users/users.routes.js';
 
 const app = express();
 
@@ -10,6 +12,10 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
+
+// Route groups
+app.use('/auth', authRoutes);
+app.use('/users', userRoutes);
 
 // Health check endpoint
 app.get('/health', (_req: Request, res: Response) => {
