@@ -1,5 +1,4 @@
 import { prisma } from '../../database/prisma.js';
-import { Prisma } from '@prisma/client';
 
 export class UsersService {
   /**
@@ -44,7 +43,7 @@ export class UsersService {
     if (data.bio !== undefined) updateData.bio = data.bio;
     if (data.title !== undefined) updateData.title = data.title;
     if (data.skills !== undefined) updateData.skills = data.skills;
-    if (data.hourlyRate !== undefined) updateData.hourlyRate = new Prisma.Decimal(data.hourlyRate);
+    if (data.hourlyRate !== undefined) updateData.hourlyRate = data.hourlyRate;
     if (data.avatarUrl !== undefined) updateData.avatarUrl = data.avatarUrl;
 
     const profile = await prisma.freelancerProfile.upsert({
@@ -56,7 +55,7 @@ export class UsersService {
         bio: data.bio,
         title: data.title,
         skills: data.skills || [],
-        hourlyRate: data.hourlyRate ? new Prisma.Decimal(data.hourlyRate) : null,
+        hourlyRate: data.hourlyRate ?? null,
         avatarUrl: data.avatarUrl,
       },
       include: {
