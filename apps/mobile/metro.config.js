@@ -4,12 +4,8 @@ const path = require('path');
 const projectRoot = __dirname;
 const monorepoRoot = path.resolve(projectRoot, '../..');
 
-/**
- * Metro configuration for Monorepo
- * https://reactnative.dev/docs/metro
- *
- * @type {import('metro-config').MetroConfig}
- */
+const defaultConfig = getDefaultConfig(projectRoot);
+
 const config = {
   watchFolders: [monorepoRoot],
   resolver: {
@@ -20,4 +16,4 @@ const config = {
   },
 };
 
-module.exports = mergeConfig(getDefaultConfig(projectRoot), config);
+module.exports = mergeConfig(defaultConfig, config);
