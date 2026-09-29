@@ -6,12 +6,12 @@ import {
   SafeAreaView,
   StyleSheet,
 } from 'react-native';
-import { defaultTheme } from './src/theme/index.js';
-import { WalletPOCScreen } from './src/screens/wallet/WalletPOCScreen.js';
-import { JobsFeedScreen } from './src/screens/jobs/JobsFeedScreen.js';
-import { CreateJobScreen } from './src/screens/jobs/CreateJobScreen.js';
-import { ProposalSubmitScreen } from './src/screens/proposals/ProposalSubmitScreen.js';
-import { ClientProposalsScreen } from './src/screens/proposals/ClientProposalsScreen.js';
+import { defaultTheme } from './src/theme';
+import { WalletPOCScreen } from './src/screens/wallet/WalletPOCScreen';
+import { JobsFeedScreen } from './src/screens/jobs/JobsFeedScreen';
+import { CreateJobScreen } from './src/screens/jobs/CreateJobScreen';
+import { ProposalSubmitScreen } from './src/screens/proposals/ProposalSubmitScreen';
+import { ClientProposalsScreen } from './src/screens/proposals/ClientProposalsScreen';
 
 type TabType = 'wallet' | 'jobs' | 'create_job' | 'proposal' | 'client_review';
 

@@ -46,6 +46,15 @@
 - [x] Implemented Wallet Service for connection, test account handling, and SIWE signature signing
 - [x] Built [WalletPOCScreen.tsx](file:///e:/Smart%20Contracts/freelanceX/apps/mobile/src/screens/wallet/WalletPOCScreen.tsx) with interactive wallet connection, live block number retrieval, USDC balance check, and SIWE cryptographic signature generation
 - [x] Set up React Native Metro Bundler configuration, Babel presets, Android native manifest, and debug keystore
+- [x] **Android Build Hardening & RN 0.76 Compatibility:**
+  - Standardized toolchain on Gradle 8.7.2, AGP 8.7.2, Kotlin 1.9.24, Java 17, and RN 0.76.6
+  - Patched `react-native-gesture-handler`: removed obsolete `ViewManagerWithGeneratedInterface`, resolved `ButtonViewGroup.getPointerEvents()` method signature clash, and configured `java.srcDirs` to ensure `NativeRNGestureHandlerModuleSpec` compilation
+  - Persisted patches using `patch-package` (`patches/react-native-gesture-handler+2.33.0.patch`) and integrated automatic `postinstall: "patch-package"` in root `package.json`
+  - Fixed AAPT resource linking errors by eliminating obsolete `rn_edit_text_material` in `styles.xml` and missing mipmap icon definitions in `AndroidManifest.xml`
+  - Resolved autolinking duplicate class conflict with `PackageList.java`
+  - Configured React Native 0.76 native library loading via `SoLoader.init(this, OpenSourceMergedSoMapping)` in `MainApplication.kt`
+  - Added `crypto.getRandomValues` polyfill in `index.js` for Viem key generation in React Native
+  - **Live Verification**: Successfully built APK (`./gradlew assembleDebug` in 26s), installed onto emulator (`emulator-5554`), launched Metro on port 8081, and verified interactive UI running live on device
 
 ### [Phase 3: Backend + Database] — ✅ COMPLETED
 - [x] Implemented SIWE Nonce Generation & Signature Verification with `viem` & single-use expiration ([auth.service.ts](file:///e:/Smart%20Contracts/freelanceX/apps/backend/src/modules/auth/auth.service.ts))

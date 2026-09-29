@@ -13,6 +13,12 @@ const config = {
       path.resolve(projectRoot, 'node_modules'),
       path.resolve(monorepoRoot, 'node_modules'),
     ],
+    blockList: [
+      /.*\/android\/\.gradle\/.*/,
+      /.*\/android\/app\/build\/.*/,
+      /.*\/android\/build\/.*/,
+      /.*\.git\/.*/,
+    ],
   },
 };
 

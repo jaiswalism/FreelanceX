@@ -7,14 +7,14 @@ import {
   StatusBar,
   Alert,
 } from 'react-native';
-import { defaultTheme } from '../../theme/index.js';
-import { Header, Card, Button, Badge, Input } from '../../components/index.js';
-import { WalletService } from '../../services/wallet/walletService.js';
+import { defaultTheme } from '../../theme';
+import { Header, Card, Button, Badge, Input } from '../../components';
+import { WalletService } from '../../services/wallet/walletService';
 import {
   fetchChainStatus,
   fetchUsdcBalance,
-} from '../../services/blockchain/client.js';
-import { ApiClient } from '../../services/api/apiClient.js';
+} from '../../services/blockchain/client';
+import { ApiClient } from '../../services/api/apiClient';
 import { HexAddress } from '@freelancerx/shared';
 
 export const WalletPOCScreen: React.FC = () => {

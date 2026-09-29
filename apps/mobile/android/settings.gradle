@@ -1,5 +1,35 @@
 rootProject.name = 'FreelancerX'
-apply from: new File(["node", "--print", "require.resolve('@react-native-community/cli-platform-android/package.json', { paths: [require.resolve('react-native/package.json')] })"].execute(null, rootDir).text.trim(), "../native_modules.gradle");
-applyNativeModulesSettingsGradle(settings)
+
 include ':app'
-includeBuild(new File(["node", "--print", "require.resolve('@react-native/gradle-plugin/package.json', { paths: [require.resolve('react-native/package.json')] })"].execute(null, rootDir).text.trim()).getParentFile())
+
+def monorepoRoot = new File(settingsDir.canonicalPath, "../../..").canonicalFile
+def gradlePluginPath = new File(monorepoRoot, "node_modules/@react-native/gradle-plugin")
+includeBuild(gradlePluginPath)
+
+def resolveModule = { String subpath ->
+    // 1. Check apps/mobile/node_modules (workspace-level, sibling of android/)
+    def f0 = new File(settingsDir, "../node_modules/" + subpath)
+    if (f0.exists()) return f0
+    // 2. Check root node_modules (hoisted by npm workspaces)
+    def f1 = new File(monorepoRoot, "node_modules/" + subpath)
+    if (f1.exists()) return f1
+    // 3. Fallback
+    def f2 = new File(settingsDir, "../../node_modules/" + subpath)
+    if (f2.exists()) return f2
+    return f1
+}
+
+include ':@react-native-async-storage_async-storage'
+project(':@react-native-async-storage_async-storage').projectDir = resolveModule('@react-native-async-storage/async-storage/android')
+
+include ':react-native-gesture-handler'
+project(':react-native-gesture-handler').projectDir = resolveModule('react-native-gesture-handler/android')
+
+include ':react-native-safe-area-context'
+project(':react-native-safe-area-context').projectDir = resolveModule('react-native-safe-area-context/android')
+
+include ':react-native-screens'
+project(':react-native-screens').projectDir = resolveModule('react-native-screens/android')
+
+include ':react-native-svg'
+project(':react-native-svg').projectDir = resolveModule('react-native-svg/android')

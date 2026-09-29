@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, ViewStyle } from 'react-native';
-import { defaultTheme } from '../theme/index.js';
-import { Badge } from './Badge.js';
+import { defaultTheme } from '../theme';
+import { Badge } from './Badge';
 
 interface HeaderProps {
   title: string;

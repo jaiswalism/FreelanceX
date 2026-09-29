@@ -1,6 +1,6 @@
-import { darkColors, lightColors, ThemeColors } from './colors.js';
-import { typography } from './typography.js';
-import { spacing, radii } from './spacing.js';
+import { darkColors, lightColors, ThemeColors } from './colors';
+import { typography } from './typography';
+import { spacing, radii } from './spacing';
 
 export { darkColors, lightColors, typography, spacing, radii };
 export type { ThemeColors };

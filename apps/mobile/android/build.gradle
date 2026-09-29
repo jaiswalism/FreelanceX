@@ -6,21 +6,84 @@ buildscript {
         targetSdkVersion = 34
         ndkVersion = "26.1.10909125"
         kotlinVersion = "1.9.24"
+        // Point native modules to the correct react-native location in this monorepo
+        REACT_NATIVE_NODE_MODULES_DIR = new File(rootDir.canonicalPath, "../../..").canonicalFile.toString() + "/node_modules/react-native"
     }
+    def repoRoot = new File(rootDir.canonicalPath, "../../..").canonicalFile
     repositories {
         google()
         mavenCentral()
+        maven { url("${repoRoot}/node_modules/react-native/android") }
+        maven { url("${repoRoot}/node_modules/jsc-android/dist") }
     }
     dependencies {
         classpath("com.android.tools.build:gradle:8.7.2")
         classpath("com.facebook.react:react-native-gradle-plugin")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.24")
     }
 }
 
 allprojects {
+    def repoRoot = new File(rootDir.canonicalPath, "../../..").canonicalFile
     repositories {
+        maven { url("${repoRoot}/node_modules/react-native/android") }
+        maven { url("${repoRoot}/node_modules/jsc-android/dist") }
         google()
         mavenCentral()
     }
 }
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Generate autolinking.json by running `react-native config` from apps/mobile.
+// The RNGP's :app:generateAutolinkingPackageList reads this file to produce
+// PackageList.java. We hook into it so the JSON is always up-to-date.
+// ──────────────────────────────────────────────────────────────────────────────
+def monorepoRoot   = new File(rootDir.canonicalPath, "../../..").canonicalFile
+def mobileRoot     = rootDir.parentFile.canonicalFile
+def autolinkOutDir = new File(rootDir, "build/generated/autolinking")
+def autolinkJson   = new File(autolinkOutDir, "autolinking.json")
+def nodeCliPath    = new File(monorepoRoot, "node_modules/react-native/cli.js")
+
+task generateAutolinkingConfig {
+    description "Runs react-native config from apps/mobile and writes autolinking.json"
+    outputs.file(autolinkJson)
+    // Re-run whenever package.json or react-native.config.js changes
+    inputs.files(
+        new File(mobileRoot, "package.json"),
+        new File(monorepoRoot, "package.json")
+    ).optional()
+
+    doLast {
+        autolinkOutDir.mkdirs()
+        def proc = new ProcessBuilder(
+                "node", nodeCliPath.absolutePath, "config"
+            )
+            .directory(mobileRoot)
+            .redirectErrorStream(false)
+            .start()
+
+        // Drain stderr in background to prevent blocking
+        def stderrThread = Thread.start { proc.errorStream.eachLine { /* discard */ } }
+
+        def json = proc.inputStream.text
+        proc.waitFor()
+        stderrThread.join()
+
+        if (proc.exitValue() != 0) {
+            throw new GradleException("react-native config failed (exit ${proc.exitValue()})")
+        }
+        autolinkJson.text = json
+        logger.lifecycle("RNGP: autolinking.json written to ${autolinkJson.absolutePath}")
+    }
+}
+
+// Make the RNGP autolinking task depend on ours
+subprojects { proj ->
+    proj.afterEvaluate {
+        def plTask = proj.tasks.findByName("generateAutolinkingPackageList")
+        if (plTask) {
+            plTask.dependsOn(rootProject.tasks.named("generateAutolinkingConfig"))
+        }
+    }
+}
+

@@ -2,6 +2,14 @@
   "name": "@freelancerx/mobile",
   "version": "1.0.0",
   "private": true,
+  "codegenConfig": {
+    "name": "FreelancerXSpec",
+    "type": "all",
+    "jsSrcsDir": "src",
+    "android": {
+      "javaPackageName": "com.freelancerx"
+    }
+  },
   "scripts": {
     "android": "react-native run-android",
     "start": "react-native start",
@@ -18,7 +26,7 @@
     "react-native": "0.76.6",
     "react-native-gesture-handler": "^2.21.2",
     "react-native-safe-area-context": "^5.1.0",
-    "react-native-screens": "^4.4.0",
+    "react-native-screens": "^3.35.0",
     "react-native-svg": "^15.11.1",
     "viem": "^2.22.23"
   },

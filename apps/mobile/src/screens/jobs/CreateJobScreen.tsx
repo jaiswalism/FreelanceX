@@ -7,9 +7,9 @@ import {
   StatusBar,
   Alert,
 } from 'react-native';
-import { defaultTheme } from '../../theme/index.js';
-import { Header, Card, Button, Input } from '../../components/index.js';
-import { ApiClient } from '../../services/api/apiClient.js';
+import { defaultTheme } from '../../theme';
+import { Header, Card, Button, Input } from '../../components';
+import { ApiClient } from '../../services/api/apiClient';
 
 interface CreateJobScreenProps {
   onBack: () => void;

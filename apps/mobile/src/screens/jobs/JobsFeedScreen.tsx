@@ -8,9 +8,9 @@ import {
   StatusBar,
   ActivityIndicator,
 } from 'react-native';
-import { defaultTheme } from '../../theme/index.js';
-import { Header, Card, Badge, Input, Button } from '../../components/index.js';
-import { ApiClient } from '../../services/api/apiClient.js';
+import { defaultTheme } from '../../theme';
+import { Header, Card, Badge, Input, Button } from '../../components';
+import { ApiClient } from '../../services/api/apiClient';
 
 interface JobsFeedScreenProps {
   onSelectJob: (jobId: string) => void;

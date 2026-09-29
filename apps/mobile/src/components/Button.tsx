@@ -6,7 +6,7 @@ import {
   ViewStyle,
   TextStyle,
 } from 'react-native';
-import { defaultTheme } from '../theme/index.js';
+import { defaultTheme } from '../theme';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'destructive';
 
