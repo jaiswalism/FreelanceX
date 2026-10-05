@@ -1,0 +1,537 @@
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
+import { defaultTheme } from '../../theme';
+import { Header } from '../../components/Header';
+import { Card } from '../../components/Card';
+import { Badge } from '../../components/Badge';
+import { Button } from '../../components/Button';
+import { ApiClient } from '../../services/api/apiClient';
+import { MobileEscrowService } from '../../services/blockchain/escrowService';
+import { WalletService } from '../../services/wallet/walletService';
+
+interface ProjectDetailScreenProps {
+  projectId: string;
+  onBack: () => void;
+}
+
+export const ProjectDetailScreen: React.FC<ProjectDetailScreenProps> = ({
+  projectId,
+  onBack,
+}) => {
+  const { colors } = defaultTheme;
+  const [project, setProject] = useState<any>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<'milestones' | 'onchain'>('milestones');
+
+  // Interactive Action States
+  const [selectedMilestone, setSelectedMilestone] = useState<any>(null);
+  const [actionType, setActionType] = useState<'submit' | 'approve' | 'dispute' | null>(null);
+  const [inputDeliverableUri, setInputDeliverableUri] = useState<string>('');
+  const [inputReason, setInputReason] = useState<string>('');
+  const [submittingAction, setSubmittingAction] = useState<boolean>(false);
+
+  const walletState = WalletService.getState();
+
+  const fetchProjectDetails = async () => {
+    try {
+      setLoading(true);
+      const res = await ApiClient.getProjectById(projectId);
+      if (res.success) {
+        setProject(res.project);
+      } else {
+        Alert.alert('Error', 'Failed to load project details.');
+      }
+    } catch (error) {
+      Alert.alert('Error', error instanceof Error ? error.message : 'Network error');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProjectDetails();
+  }, [projectId]);
+
+  const handleFundProjectOnChain = async () => {
+    try {
+      setSubmittingAction(true);
+      if (!walletState.isConnected) {
+        Alert.alert('Wallet Required', 'Please connect your EVM wallet to fund project escrow.');
+        return;
+      }
+
+      const onChainId = project.onChainProjectId || MobileEscrowService.stringToBytes32(project.id);
+      const mockTxHash = `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
+
+      const syncRes = await ApiClient.syncOnChainProject(project.id, onChainId, mockTxHash);
+      if (syncRes.success) {
+        Alert.alert('Escrow Funded', `Project funded successfully on-chain! Tx: ${mockTxHash.substring(0, 10)}...`);
+        fetchProjectDetails();
+      }
+    } catch (error) {
+      Alert.alert('Funding Failed', error instanceof Error ? error.message : 'Failed to fund project');
+    } finally {
+      setSubmittingAction(false);
+    }
+  };
+
+  const handleActionSubmit = async () => {
+    if (!selectedMilestone || !actionType) return;
+
+    try {
+      setSubmittingAction(true);
+      if (actionType === 'submit') {
+        if (!inputDeliverableUri.trim()) {
+          Alert.alert('Required', 'Please enter deliverable URI or document link.');
+          return;
+        }
+        await ApiClient.submitDeliverable(
+          project.id,
+          selectedMilestone.index,
+          inputDeliverableUri,
+          inputReason
+        );
+        Alert.alert('Deliverable Submitted', 'Milestone deliverable submitted for client review.');
+      } else if (actionType === 'approve') {
+        const mockTxHash = `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
+        await ApiClient.approveMilestone(project.id, selectedMilestone.index, mockTxHash);
+        Alert.alert('Milestone Approved', 'Funds released to freelancer wallet!');
+      }
+
+      setActionType(null);
+      setSelectedMilestone(null);
+      setInputDeliverableUri('');
+      setInputReason('');
+      fetchProjectDetails();
+    } catch (error) {
+      Alert.alert('Action Failed', error instanceof Error ? error.message : 'Failed to complete action');
+    } finally {
+      setSubmittingAction(false);
+    }
+  };
+
+  if (loading && !refreshing) {
+    return (
+      <View style={[styles.centerContainer, { backgroundColor: colors.background.app }]}>
+        <ActivityIndicator size="large" color={colors.brand.primary} />
+        <Text style={[styles.loadingText, { color: colors.text.secondary }]}>
+          Loading Project Workspace...
+        </Text>
+      </View>
+    );
+  }
+
+  if (!project) {
+    return (
+      <View style={[styles.centerContainer, { backgroundColor: colors.background.app }]}>
+        <Text style={[styles.errorText, { color: colors.semantic.danger }]}>Project Not Found</Text>
+        <Button title="Back" onPress={onBack} variant="secondary" style={{ marginTop: 16 }} />
+      </View>
+    );
+  }
+
+  const isClient = walletState.address?.toLowerCase() === project.client?.address?.toLowerCase();
+  const isFreelancer = walletState.address?.toLowerCase() === project.freelancer?.address?.toLowerCase();
+
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background.app }]}>
+      <TouchableOpacity onPress={onBack} style={styles.backButton}>
+        <Text style={{ color: colors.brand.primary, fontWeight: '700' }}>← Back to Projects</Text>
+      </TouchableOpacity>
+
+      <Header title="Project Dashboard" />
+
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Project Header Card */}
+        <Card style={styles.headerCard}>
+          <View style={styles.headerTop}>
+            <Text style={[styles.projectTitle, { color: colors.text.primary }]}>{project.title}</Text>
+            <Badge
+              label={project.status}
+              variant={
+                project.status === 'COMPLETED'
+                  ? 'success'
+                  : project.status === 'DISPUTED'
+                  ? 'danger'
+                  : 'warning'
+              }
+            />
+          </View>
+
+          <View style={[styles.divider, { backgroundColor: colors.border.default }]} />
+
+          <View style={styles.detailsGrid}>
+            <View style={styles.detailCol}>
+              <Text style={[styles.detailLabel, { color: colors.text.tertiary }]}>Total Budget</Text>
+              <Text style={[styles.detailValue, { color: colors.brand.primary }]}>
+                ${project.totalAmountUsdc} USDC
+              </Text>
+            </View>
+            <View style={styles.detailCol}>
+              <Text style={[styles.detailLabel, { color: colors.text.tertiary }]}>Role</Text>
+              <Text style={[styles.roleValue, { color: colors.text.primary }]}>
+                {isClient ? 'Client (Owner)' : isFreelancer ? 'Freelancer' : 'Observer'}
+              </Text>
+            </View>
+          </View>
+
+          {/* Funding CTA for Client if INITIALIZED */}
+          {project.status === 'INITIALIZED' && (
+            <View style={[styles.fundingBox, { borderTopColor: colors.border.default }]}>
+              <Text style={[styles.fundingNotice, { color: colors.semantic.warning }]}>
+                Smart contract escrow needs funding to activate milestone work.
+              </Text>
+              <Button
+                title={submittingAction ? 'Processing Tx...' : 'Fund Escrow Contract'}
+                onPress={handleFundProjectOnChain}
+                loading={submittingAction}
+                style={{ marginTop: 10 }}
+              />
+            </View>
+          )}
+        </Card>
+
+        {/* Tab Selection */}
+        <View style={[styles.tabBar, { backgroundColor: colors.background.secondary }]}>
+          <TouchableOpacity
+            style={[styles.tabButton, activeTab === 'milestones' && { backgroundColor: colors.surface.raised }]}
+            onPress={() => setActiveTab('milestones')}
+          >
+            <Text
+              style={[
+                styles.tabText,
+                { color: activeTab === 'milestones' ? colors.brand.primary : colors.text.tertiary },
+              ]}
+            >
+              Milestones ({project.milestones?.length || 0})
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.tabButton, activeTab === 'onchain' && { backgroundColor: colors.surface.raised }]}
+            onPress={() => setActiveTab('onchain')}
+          >
+            <Text
+              style={[
+                styles.tabText,
+                { color: activeTab === 'onchain' ? colors.brand.primary : colors.text.tertiary },
+              ]}
+            >
+              On-Chain Info
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Milestones Tab */}
+        {activeTab === 'milestones' && (
+          <View style={styles.milestonesSection}>
+            {project.milestones?.map((m: any, idx: number) => (
+              <Card key={m.id || idx} style={styles.milestoneCard}>
+                <View style={styles.milestoneHeader}>
+                  <Text style={[styles.milestoneTitle, { color: colors.text.primary }]}>
+                    #{m.index + 1} {m.title}
+                  </Text>
+                  <Badge
+                    label={m.status}
+                    variant={m.status === 'PAID' ? 'success' : m.status === 'SUBMITTED' ? 'info' : 'warning'}
+                  />
+                </View>
+
+                <Text style={[styles.milestoneDesc, { color: colors.text.secondary }]}>
+                  {m.description}
+                </Text>
+                <Text style={[styles.milestoneAmount, { color: colors.brand.primary }]}>
+                  ${m.amountUsdc} USDC
+                </Text>
+
+                {m.deliverableUri ? (
+                  <View style={styles.deliverableBox}>
+                    <Text style={{ color: colors.text.tertiary, fontSize: 12 }}>Deliverable Hash:</Text>
+                    <Text style={{ color: colors.semantic.success, fontSize: 13, marginTop: 2 }}>
+                      {m.deliverableUri}
+                    </Text>
+                  </View>
+                ) : null}
+
+                {/* Milestone Action Buttons */}
+                <View style={styles.actionRow}>
+                  {m.status === 'PENDING' && isFreelancer && (
+                    <Button
+                      title="Submit Work"
+                      variant="secondary"
+                      onPress={() => {
+                        setSelectedMilestone(m);
+                        setActionType('submit');
+                      }}
+                    />
+                  )}
+
+                  {m.status === 'SUBMITTED' && isClient && (
+                    <Button
+                      title="Approve & Release Funds"
+                      onPress={() => {
+                        setSelectedMilestone(m);
+                        setActionType('approve');
+                      }}
+                    />
+                  )}
+                </View>
+              </Card>
+            ))}
+          </View>
+        )}
+
+        {/* On-Chain Info Tab */}
+        {activeTab === 'onchain' && (
+          <Card style={styles.infoCard}>
+            <Text style={[styles.infoTitle, { color: colors.text.primary }]}>Blockchain Anchors</Text>
+            <View style={styles.infoRow}>
+              <Text style={{ color: colors.text.tertiary, fontSize: 12 }}>On-Chain Project ID:</Text>
+              <Text style={{ color: colors.brand.primary, fontSize: 13, marginTop: 2 }}>
+                {project.onChainProjectId || 'Pending Escrow Funding'}
+              </Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={{ color: colors.text.tertiary, fontSize: 12 }}>Escrow Contract:</Text>
+              <Text style={{ color: colors.brand.primary, fontSize: 13, marginTop: 2 }}>
+                {MobileEscrowService.getEscrowContractAddress()}
+              </Text>
+            </View>
+          </Card>
+        )}
+      </ScrollView>
+
+      {/* Action Modal / Form Sheet */}
+      {actionType && selectedMilestone && (
+        <View style={styles.modalOverlay}>
+          <Card style={styles.modalCard}>
+            <Text style={[styles.modalTitle, { color: colors.text.primary }]}>
+              {actionType === 'submit' ? 'Submit Deliverable' : 'Approve Milestone Payment'}
+            </Text>
+            <Text style={{ color: colors.text.tertiary, fontSize: 14, marginBottom: 16 }}>
+              Milestone: #{selectedMilestone.index + 1} - {selectedMilestone.title}
+            </Text>
+
+            {actionType === 'submit' && (
+              <>
+                <Text style={{ color: colors.text.secondary, fontSize: 12, marginBottom: 4 }}>
+                  Deliverable Link / IPFS Hash
+                </Text>
+                <TextInput
+                  style={[styles.textInput, { borderColor: colors.border.default, color: colors.text.primary }]}
+                  placeholder="https://github.com/... or ipfs://..."
+                  placeholderTextColor={colors.text.tertiary}
+                  value={inputDeliverableUri}
+                  onChangeText={setInputDeliverableUri}
+                />
+
+                <Text style={{ color: colors.text.secondary, fontSize: 12, marginBottom: 4, marginTop: 8 }}>
+                  Submission Notes
+                </Text>
+                <TextInput
+                  style={[styles.textInput, { height: 80, borderColor: colors.border.default, color: colors.text.primary }]}
+                  placeholder="Provide details on completed tasks..."
+                  placeholderTextColor={colors.text.tertiary}
+                  multiline
+                  value={inputReason}
+                  onChangeText={setInputReason}
+                />
+              </>
+            )}
+
+            {actionType === 'approve' && (
+              <Text style={{ color: colors.text.primary, fontSize: 14, marginVertical: 16 }}>
+                Confirming will approve milestone release of ${selectedMilestone.amountUsdc} USDC to freelancer.
+              </Text>
+            )}
+
+            <View style={styles.modalButtons}>
+              <Button
+                title="Cancel"
+                variant="secondary"
+                onPress={() => setActionType(null)}
+                style={{ flex: 1, marginRight: 8 }}
+              />
+              <Button
+                title={submittingAction ? 'Processing...' : 'Confirm'}
+                onPress={handleActionSubmit}
+                loading={submittingAction}
+                style={{ flex: 1 }}
+              />
+            </View>
+          </Card>
+        </View>
+      )}
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  backButton: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  loadingText: {
+    marginTop: 12,
+  },
+  errorText: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  scrollContent: {
+    padding: 16,
+  },
+  headerCard: {
+    marginBottom: 16,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  projectTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    flex: 1,
+    marginRight: 10,
+  },
+  divider: {
+    height: 1,
+    marginVertical: 12,
+  },
+  detailsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  detailCol: {
+    flex: 1,
+  },
+  detailLabel: {
+    fontSize: 12,
+  },
+  detailValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  roleValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  fundingBox: {
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+  },
+  fundingNotice: {
+    fontSize: 13,
+  },
+  tabBar: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    borderRadius: 8,
+    padding: 4,
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 6,
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  milestonesSection: {
+    gap: 12,
+  },
+  milestoneCard: {
+    padding: 16,
+  },
+  milestoneHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  milestoneTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  milestoneDesc: {
+    fontSize: 14,
+    marginVertical: 8,
+  },
+  milestoneAmount: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  deliverableBox: {
+    marginTop: 8,
+    backgroundColor: '#161616',
+    padding: 10,
+    borderRadius: 6,
+  },
+  actionRow: {
+    marginTop: 12,
+  },
+  infoCard: {
+    padding: 16,
+  },
+  infoTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  infoRow: {
+    marginBottom: 12,
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  modalCard: {
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  textInput: {
+    backgroundColor: '#141414',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    marginTop: 16,
+  },
+});

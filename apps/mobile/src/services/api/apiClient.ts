@@ -186,4 +186,84 @@ export class ApiClient {
       method: 'POST',
     });
   }
+
+  // Projects & Escrow Endpoints
+  public static async getMyProjects(): Promise<{ success: boolean; projects: any[] }> {
+    return this.request('/projects/me');
+  }
+
+  public static async getProjectById(projectId: string): Promise<{ success: boolean; project: any }> {
+    return this.request(`/projects/${projectId}`);
+  }
+
+  public static async syncOnChainProject(
+    projectId: string,
+    onChainProjectId: string,
+    fundedTxHash?: string
+  ): Promise<{ success: boolean; project: any }> {
+    return this.request(`/projects/${projectId}/onchain-sync`, {
+      method: 'POST',
+      body: JSON.stringify({ onChainProjectId, fundedTxHash }),
+    });
+  }
+
+  public static async submitDeliverable(
+    projectId: string,
+    milestoneIndex: number,
+    deliverableUri: string,
+    deliverableDescription?: string
+  ): Promise<{ success: boolean; milestone: any }> {
+    return this.request(`/projects/${projectId}/milestones/${milestoneIndex}/submit`, {
+      method: 'POST',
+      body: JSON.stringify({ deliverableUri, deliverableDescription }),
+    });
+  }
+
+  public static async approveMilestone(
+    projectId: string,
+    milestoneIndex: number,
+    paymentTxHash?: string
+  ): Promise<{ success: boolean; milestone: any }> {
+    return this.request(`/projects/${projectId}/milestones/${milestoneIndex}/approve`, {
+      method: 'POST',
+      body: JSON.stringify({ paymentTxHash }),
+    });
+  }
+
+  public static async getUserReputation(address: string): Promise<{ success: boolean; reputation: any }> {
+    return this.request(`/users/${address}/reputation`);
+  }
+
+  // Messaging Endpoints
+  public static async getProjectMessages(projectId: string): Promise<{ success: boolean; messages: any[] }> {
+    return this.request(`/projects/${projectId}/messages`);
+  }
+
+  public static async sendMessage(
+    projectId: string,
+    content: string,
+    attachmentUri?: string
+  ): Promise<{ success: boolean; message: any }> {
+    return this.request(`/projects/${projectId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ content, attachmentUri }),
+    });
+  }
+
+  // Dispute Endpoints
+  public static async createDispute(data: {
+    projectId: string;
+    milestoneIndex: number;
+    reason: string;
+    evidenceUris?: string[];
+  }): Promise<{ success: boolean; dispute: any }> {
+    return this.request('/disputes', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  public static async getProjectDisputes(projectId: string): Promise<{ success: boolean; disputes: any[] }> {
+    return this.request(`/projects/${projectId}/disputes`);
+  }
 }

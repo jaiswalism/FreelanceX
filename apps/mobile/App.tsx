@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   SafeAreaView,
-  StyleSheet,
 } from 'react-native';
 import { defaultTheme } from './src/theme';
 import { WalletPOCScreen } from './src/screens/wallet/WalletPOCScreen';
@@ -12,12 +11,15 @@ import { JobsFeedScreen } from './src/screens/jobs/JobsFeedScreen';
 import { CreateJobScreen } from './src/screens/jobs/CreateJobScreen';
 import { ProposalSubmitScreen } from './src/screens/proposals/ProposalSubmitScreen';
 import { ClientProposalsScreen } from './src/screens/proposals/ClientProposalsScreen';
+import { ProjectsListScreen } from './src/screens/projects/ProjectsListScreen';
+import { ProjectDetailScreen } from './src/screens/projects/ProjectDetailScreen';
 
-type TabType = 'wallet' | 'jobs' | 'create_job' | 'proposal' | 'client_review';
+type TabType = 'wallet' | 'jobs' | 'create_job' | 'proposal' | 'client_review' | 'projects';
 
 export default function App() {
-  const { colors, typography } = defaultTheme;
+  const { colors } = defaultTheme;
   const [activeTab, setActiveTab] = useState<TabType>('wallet');
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [selectedJob, setSelectedJob] = useState<any>({
     id: 'job-1',
     title: 'Base Sepolia Escrow Smart Contract Audit',
@@ -27,6 +29,15 @@ export default function App() {
   });
 
   const renderScreen = () => {
+    if (selectedProjectId) {
+      return (
+        <ProjectDetailScreen
+          projectId={selectedProjectId}
+          onBack={() => setSelectedProjectId(null)}
+        />
+      );
+    }
+
     switch (activeTab) {
       case 'wallet':
         return <WalletPOCScreen />;
@@ -69,7 +80,13 @@ export default function App() {
           <ClientProposalsScreen
             job={selectedJob}
             onBack={() => setActiveTab('jobs')}
-            onProjectCreated={() => setActiveTab('wallet')}
+            onProjectCreated={() => setActiveTab('projects')}
+          />
+        );
+      case 'projects':
+        return (
+          <ProjectsListScreen
+            onSelectProject={(projId) => setSelectedProjectId(projId)}
           />
         );
     }
@@ -92,77 +109,74 @@ export default function App() {
         }}
       >
         <TouchableOpacity
-          onPress={() => setActiveTab('wallet')}
+          onPress={() => {
+            setSelectedProjectId(null);
+            setActiveTab('wallet');
+          }}
           style={{ alignItems: 'center', flex: 1 }}
         >
           <Text
             style={{
-              color: activeTab === 'wallet' ? colors.brand.primary : colors.text.tertiary,
-              fontSize: 12,
+              color: activeTab === 'wallet' && !selectedProjectId ? colors.brand.primary : colors.text.tertiary,
+              fontSize: 11,
               fontWeight: activeTab === 'wallet' ? '700' : '500',
             }}
           >
-            💳 Wallet & RPC
+            💳 Wallet
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={() => setActiveTab('jobs')}
+          onPress={() => {
+            setSelectedProjectId(null);
+            setActiveTab('jobs');
+          }}
           style={{ alignItems: 'center', flex: 1 }}
         >
           <Text
             style={{
-              color: activeTab === 'jobs' ? colors.brand.primary : colors.text.tertiary,
-              fontSize: 12,
+              color: activeTab === 'jobs' && !selectedProjectId ? colors.brand.primary : colors.text.tertiary,
+              fontSize: 11,
               fontWeight: activeTab === 'jobs' ? '700' : '500',
             }}
           >
-            💼 Jobs Feed
+            💼 Jobs
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={() => setActiveTab('create_job')}
+          onPress={() => {
+            setSelectedProjectId(null);
+            setActiveTab('create_job');
+          }}
           style={{ alignItems: 'center', flex: 1 }}
         >
           <Text
             style={{
-              color: activeTab === 'create_job' ? colors.brand.primary : colors.text.tertiary,
-              fontSize: 12,
+              color: activeTab === 'create_job' && !selectedProjectId ? colors.brand.primary : colors.text.tertiary,
+              fontSize: 11,
               fontWeight: activeTab === 'create_job' ? '700' : '500',
             }}
           >
-            ➕ Post Job
+            ➕ Post
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={() => setActiveTab('proposal')}
+          onPress={() => {
+            setSelectedProjectId(null);
+            setActiveTab('projects');
+          }}
           style={{ alignItems: 'center', flex: 1 }}
         >
           <Text
             style={{
-              color: activeTab === 'proposal' ? colors.brand.primary : colors.text.tertiary,
-              fontSize: 12,
-              fontWeight: activeTab === 'proposal' ? '700' : '500',
+              color: (activeTab === 'projects' || selectedProjectId) ? colors.brand.primary : colors.text.tertiary,
+              fontSize: 11,
+              fontWeight: activeTab === 'projects' ? '700' : '500',
             }}
           >
-            📄 Apply
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => setActiveTab('client_review')}
-          style={{ alignItems: 'center', flex: 1 }}
-        >
-          <Text
-            style={{
-              color: activeTab === 'client_review' ? colors.brand.primary : colors.text.tertiary,
-              fontSize: 12,
-              fontWeight: activeTab === 'client_review' ? '700' : '500',
-            }}
-          >
-            🤝 Hire
+            🛡️ Escrow
           </Text>
         </TouchableOpacity>
       </View>

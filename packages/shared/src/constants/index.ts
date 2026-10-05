@@ -20,6 +20,9 @@ export const NETWORKS = {
         decimals: 6,
         symbol: 'USDC',
       },
+      escrow: {
+        address: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+      },
     },
     testnet: true,
   },

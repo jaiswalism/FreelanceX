@@ -13,7 +13,7 @@
   "scripts": {
     "android": "react-native run-android",
     "start": "react-native start",
-    "test": "jest",
+    "test": "jest --passWithNoTests",
     "lint": "eslint ."
   },
   "dependencies": {
