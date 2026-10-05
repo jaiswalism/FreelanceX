@@ -134,6 +134,22 @@ export class ProjectsService {
       },
     });
 
+    if (paymentTxHash) {
+      const remainingUnpaid = await prisma.projectMilestone.count({
+        where: {
+          projectId,
+          id: { not: milestone.id },
+          status: { not: 'PAID' },
+        },
+      });
+      if (remainingUnpaid === 0) {
+        await prisma.project.update({
+          where: { id: projectId },
+          data: { status: 'COMPLETED' },
+        });
+      }
+    }
+
     return updated;
   }
 }
