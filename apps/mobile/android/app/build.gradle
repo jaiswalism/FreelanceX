@@ -9,6 +9,7 @@ react {
     reactNativeDir = file("${monorepoRoot}/node_modules/react-native")
     codegenDir = file("${monorepoRoot}/node_modules/@react-native/codegen")
     cliFile = file("${monorepoRoot}/node_modules/react-native/cli.js")
+    hermesCommand = "${monorepoRoot}/node_modules/react-native/sdks/hermesc/win64-bin/hermesc.exe"
 }
 
 def enableProguardInReleaseBuilds = false
