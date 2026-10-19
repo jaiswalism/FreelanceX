@@ -35,8 +35,10 @@ for %%i in ("%APP_HOME%") do set APP_HOME=%%~fi
 @rem Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
 set DEFAULT_JVM_OPTS="-Xmx64m" "-Xms64m"
 
-@rem Check and auto-correct JAVA_HOME if invalid
-if not exist "%JAVA_HOME%\bin\java.exe" (
+@rem Check and auto-correct JAVA_HOME to compatible JDK 17
+if exist "C:\Users\mishr\.gradle\jdks\eclipse_adoptium-17-amd64-windows.2\bin\java.exe" (
+    set "JAVA_HOME=C:\Users\mishr\.gradle\jdks\eclipse_adoptium-17-amd64-windows.2"
+) else if not exist "%JAVA_HOME%\bin\java.exe" (
     if exist "C:\Program Files\Eclipse Adoptium\jdk-17.0.20.101-hotspot\bin\java.exe" (
         set "JAVA_HOME=C:\Program Files\Eclipse Adoptium\jdk-17.0.20.101-hotspot"
     ) else if exist "C:\Program Files\Android\Android Studio\jbr\bin\java.exe" (

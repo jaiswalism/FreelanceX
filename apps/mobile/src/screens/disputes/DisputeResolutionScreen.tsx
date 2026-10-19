@@ -18,13 +18,13 @@ import { MobileEscrowService } from '../../services/blockchain/escrowService';
 
 interface DisputeResolutionScreenProps {
   projectId: string;
-  milestoneIndex: number;
+  milestoneIndex?: number;
   onBack: () => void;
 }
 
 export const DisputeResolutionScreen: React.FC<DisputeResolutionScreenProps> = ({
   projectId,
-  milestoneIndex,
+  milestoneIndex = 0,
   onBack,
 }) => {
   const { colors } = defaultTheme;

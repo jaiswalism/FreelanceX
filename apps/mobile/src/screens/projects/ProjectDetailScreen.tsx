@@ -14,6 +14,9 @@ import { Header } from '../../components/Header';
 import { Card } from '../../components/Card';
 import { Badge } from '../../components/Badge';
 import { Button } from '../../components/Button';
+import { VerifiedReputationBadge } from '../../components/VerifiedReputationBadge';
+import { ProjectChatScreen } from '../messages/ProjectChatScreen';
+import { DisputeResolutionScreen } from '../disputes/DisputeResolutionScreen';
 import { ApiClient } from '../../services/api/apiClient';
 import { MobileEscrowService } from '../../services/blockchain/escrowService';
 import { WalletService } from '../../services/wallet/walletService';
@@ -31,7 +34,7 @@ export const ProjectDetailScreen: React.FC<ProjectDetailScreenProps> = ({
   const [project, setProject] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<'milestones' | 'onchain'>('milestones');
+  const [activeTab, setActiveTab] = useState<'milestones' | 'chat' | 'disputes' | 'onchain'>('milestones');
 
   // Interactive Action States
   const [selectedMilestone, setSelectedMilestone] = useState<any>(null);
@@ -186,6 +189,13 @@ export const ProjectDetailScreen: React.FC<ProjectDetailScreenProps> = ({
             </View>
           </View>
 
+          <View style={{ marginTop: 12 }}>
+            <VerifiedReputationBadge
+              score={project.freelancer?.freelancerProfile?.reputationScore ?? 88}
+              isVerified={true}
+            />
+          </View>
+
           {/* Funding CTA for Client if INITIALIZED */}
           {project.status === 'INITIALIZED' && (
             <View style={[styles.fundingBox, { borderTopColor: colors.border.default }]}>
@@ -215,6 +225,34 @@ export const ProjectDetailScreen: React.FC<ProjectDetailScreenProps> = ({
               ]}
             >
               Milestones ({project.milestones?.length || 0})
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.tabButton, activeTab === 'chat' && { backgroundColor: colors.surface.raised }]}
+            onPress={() => setActiveTab('chat')}
+          >
+            <Text
+              style={[
+                styles.tabText,
+                { color: activeTab === 'chat' ? colors.brand.primary : colors.text.tertiary },
+              ]}
+            >
+              💬 Chat
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.tabButton, activeTab === 'disputes' && { backgroundColor: colors.surface.raised }]}
+            onPress={() => setActiveTab('disputes')}
+          >
+            <Text
+              style={[
+                styles.tabText,
+                { color: activeTab === 'disputes' ? colors.brand.primary : colors.text.tertiary },
+              ]}
+            >
+              ⚖️ Disputes
             </Text>
           </TouchableOpacity>
 
@@ -289,6 +327,26 @@ export const ProjectDetailScreen: React.FC<ProjectDetailScreenProps> = ({
                 </View>
               </Card>
             ))}
+          </View>
+        )}
+
+        {/* Chat Tab */}
+        {activeTab === 'chat' && (
+          <View style={{ minHeight: 480, marginHorizontal: 16 }}>
+            <ProjectChatScreen
+              projectId={project.id}
+              onBack={() => setActiveTab('milestones')}
+            />
+          </View>
+        )}
+
+        {/* Disputes Tab */}
+        {activeTab === 'disputes' && (
+          <View style={{ minHeight: 480, marginHorizontal: 16 }}>
+            <DisputeResolutionScreen
+              projectId={project.id}
+              onBack={() => setActiveTab('milestones')}
+            />
           </View>
         )}
 
