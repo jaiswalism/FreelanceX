@@ -6,9 +6,10 @@ import {
   SafeAreaView,
   StatusBar,
   Alert,
+  StyleSheet,
 } from 'react-native';
 import { defaultTheme } from '../../theme';
-import { Header, Card, Button, Input, Badge } from '../../components';
+import { Header, Card, Button, Input, Icon } from '../../components';
 import { ApiClient } from '../../services/api/apiClient';
 import { ProposedMilestone } from '@freelancerx/shared';
 
@@ -23,7 +24,7 @@ export const ProposalSubmitScreen: React.FC<ProposalSubmitScreenProps> = ({
   onBack,
   onSubmitted,
 }) => {
-  const { colors, typography, spacing } = defaultTheme;
+  const { colors, spacing } = defaultTheme;
 
   const [coverLetter, setCoverLetter] = useState('');
   const [proposedPriceUsdc, setProposedPriceUsdc] = useState(job?.budgetUsdc || '1000');
@@ -44,7 +45,7 @@ export const ProposalSubmitScreen: React.FC<ProposalSubmitScreenProps> = ({
 
   const handleSubmit = async () => {
     if (!coverLetter || coverLetter.length < 20) {
-      Alert.alert('Cover Letter Required', 'Please write a descriptive cover letter (minimum 20 characters).');
+      Alert.alert('Cover Letter Required', 'Please provide a clear pitch explaining your approach (at least 20 characters).');
       return;
     }
 
@@ -57,10 +58,10 @@ export const ProposalSubmitScreen: React.FC<ProposalSubmitScreenProps> = ({
         proposedMilestones: milestones,
       });
 
-      Alert.alert('Success', 'Your proposal was submitted to the client!');
+      Alert.alert('Proposal Submitted! 🚀', 'The client will review your proposal and can accept it to initiate milestone escrow.');
       onSubmitted();
     } catch (err) {
-      Alert.alert('Proposal Submission Failed', err instanceof Error ? err.message : 'Unknown error');
+      Alert.alert('Submission Failed', err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
     }
@@ -68,41 +69,52 @@ export const ProposalSubmitScreen: React.FC<ProposalSubmitScreenProps> = ({
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background.app }}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.background.secondary} />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       <Header
         title="Submit Proposal"
-        subtitle={`Applying for: ${job?.title || 'Job'}`}
+        subtitle={`Gig: ${job?.title || 'Job'}`}
+        onBack={onBack}
       />
 
       <ScrollView
         contentContainerStyle={{
           padding: spacing.layout.screenHorizontalPadding,
           gap: 16,
-          paddingBottom: 40,
+          paddingTop: 16,
+          paddingBottom: 48,
         }}
+        showsVerticalScrollIndicator={false}
       >
-        {/* Job Summary */}
-        <Card>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-            <Text style={{ color: colors.text.primary, fontWeight: '700', fontSize: typography.scale.heading3.fontSize, flex: 1 }}>
+        {/* Job Summary Banner */}
+        <Card style={styles.jobCard}>
+          <View style={styles.jobHeader}>
+            <Text style={styles.jobTitle} numberOfLines={2}>
               {job?.title}
             </Text>
-            <Badge label={`${job?.budgetUsdc} USDC`} variant="brand" />
+            <View style={styles.pricePill}>
+              <Text style={styles.pricePillText}>${job?.budgetUsdc} USDC</Text>
+            </View>
           </View>
-          <Text style={{ color: colors.text.secondary, fontSize: typography.scale.body.fontSize }}>
+          <Text style={styles.jobDescription} numberOfLines={3}>
             {job?.description}
           </Text>
         </Card>
 
-        {/* Proposal Form */}
-        <Card>
-          <Text style={{ color: colors.text.primary, fontWeight: '700', fontSize: typography.scale.heading3.fontSize, marginBottom: 16 }}>
-            Your Offer
+        {/* Protection Note */}
+        <View style={styles.escrowPill}>
+          <Icon name="shield" size={16} color="#10B981" />
+          <Text style={styles.escrowPillText}>
+            Guaranteed Payout: Funds locked in escrow before start
           </Text>
+        </View>
+
+        {/* Proposal Form Card */}
+        <Card style={styles.formCard}>
+          <Text style={styles.sectionTitle}>Your Pitch & Terms</Text>
 
           <Input
-            label="Cover Letter / Approach"
-            placeholder="Explain your technical approach, relevant past experience, and deliverables..."
+            label="Cover Letter / Proposal"
+            placeholder="Introduce your relevant experience, proposed technical architecture, deliverables, and estimated completion..."
             value={coverLetter}
             onChangeText={setCoverLetter}
             multiline
@@ -113,7 +125,7 @@ export const ProposalSubmitScreen: React.FC<ProposalSubmitScreenProps> = ({
           <View style={{ flexDirection: 'row', gap: 12 }}>
             <View style={{ flex: 1 }}>
               <Input
-                label="Proposed Price (USDC)"
+                label="Bid Amount (USDC)"
                 value={proposedPriceUsdc}
                 onChangeText={setProposedPriceUsdc}
                 keyboardType="numeric"
@@ -121,7 +133,7 @@ export const ProposalSubmitScreen: React.FC<ProposalSubmitScreenProps> = ({
             </View>
             <View style={{ flex: 1 }}>
               <Input
-                label="Duration (Days)"
+                label="Delivery (Days)"
                 value={proposedDurationDays}
                 onChangeText={setProposedDurationDays}
                 keyboardType="numeric"
@@ -129,43 +141,167 @@ export const ProposalSubmitScreen: React.FC<ProposalSubmitScreenProps> = ({
             </View>
           </View>
 
-          {/* Milestone Plan */}
-          <Text style={{ color: colors.text.primary, fontWeight: '600', marginBottom: 8 }}>
-            Proposed Milestone Breakdown ({milestones.length} milestones)
-          </Text>
-
-          {milestones.map((m, idx) => (
-            <View
-              key={idx}
-              style={{
-                backgroundColor: colors.surface.raised,
-                padding: 12,
-                borderRadius: 8,
-                borderWidth: 1,
-                borderColor: colors.border.subtle,
-                marginBottom: 8,
-              }}
-            >
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                <Text style={{ color: colors.text.primary, fontWeight: '600' }}>
-                  Milestone #{idx + 1}
-                </Text>
-                <Text style={{ color: colors.brand.primary, fontFamily: typography.fontFamily.numeric, fontWeight: '700' }}>
-                  {m.amountUsdc} USDC
-                </Text>
-              </View>
-              <Text style={{ color: colors.text.secondary, fontSize: typography.scale.caption.fontSize }}>
-                {m.description} ({m.durationDays} days)
-              </Text>
+          {/* Milestones Breakdown */}
+          <View style={{ marginTop: 8 }}>
+            <View style={styles.milestonesHeader}>
+              <Text style={styles.milestonesTitle}>Milestone Breakdown</Text>
+              <Text style={styles.milestonesSubtitle}>{milestones.length} Milestones</Text>
             </View>
-          ))}
 
-          <View style={{ flexDirection: 'row', gap: 12, marginTop: 12 }}>
-            <Button title="Back" onPress={onBack} variant="secondary" style={{ flex: 1 }} />
-            <Button title="Submit Proposal" onPress={handleSubmit} loading={loading} style={{ flex: 2 }} />
+            {milestones.map((m, idx) => (
+              <View key={idx} style={styles.milestoneItem}>
+                <View style={styles.milestoneTop}>
+                  <View style={styles.milestoneIndexBadge}>
+                    <Text style={styles.milestoneIndexText}>#{idx + 1}</Text>
+                  </View>
+                  <Text style={styles.milestoneAmount}>${m.amountUsdc} USDC</Text>
+                </View>
+                <Text style={styles.milestoneDescription}>{m.description}</Text>
+                <View style={styles.milestoneDurationRow}>
+                  <Icon name="clock" size={12} color="#8D95A5" />
+                  <Text style={styles.milestoneDurationText}>{m.durationDays} Days target</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+
+          <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
+            <Button
+              title="Back"
+              onPress={onBack}
+              variant="secondary"
+              style={{ flex: 1 }}
+            />
+            <Button
+              title="Send Proposal"
+              onPress={handleSubmit}
+              loading={loading}
+              style={{ flex: 2 }}
+            />
           </View>
         </Card>
       </ScrollView>
     </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  jobCard: {
+    padding: 18,
+  },
+  jobHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+    gap: 12,
+  },
+  jobTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1A1D2E',
+    flex: 1,
+  },
+  pricePill: {
+    backgroundColor: '#F0EEFF',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  pricePillText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#5B4DFF',
+  },
+  jobDescription: {
+    fontSize: 13,
+    color: '#697089',
+    lineHeight: 18,
+  },
+  escrowPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E8FAF3',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 14,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#C6F4E2',
+  },
+  escrowPillText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#065F46',
+  },
+  formCard: {
+    padding: 18,
+  },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#1A1D2E',
+    marginBottom: 16,
+  },
+  milestonesHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  milestonesTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1A1D2E',
+  },
+  milestonesSubtitle: {
+    fontSize: 12,
+    color: '#8D95A5',
+  },
+  milestoneItem: {
+    backgroundColor: '#F8FAFD',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#EEF0F8',
+  },
+  milestoneTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  milestoneIndexBadge: {
+    backgroundColor: '#EAE6FF',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  milestoneIndexText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#5B4DFF',
+  },
+  milestoneAmount: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1A1D2E',
+  },
+  milestoneDescription: {
+    fontSize: 13,
+    color: '#4A5068',
+    lineHeight: 17,
+    marginBottom: 6,
+  },
+  milestoneDurationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  milestoneDurationText: {
+    fontSize: 11,
+    color: '#8D95A5',
+    fontWeight: '500',
+  },
+});

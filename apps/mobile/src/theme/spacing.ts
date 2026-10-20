@@ -13,16 +13,17 @@ export const spacing = {
   layout: {
     screenHorizontalPadding: 20,
     compactContentPadding: 12,
-    standardContentPadding: 16,
-    largeContentPadding: 20,
+    standardContentPadding: 18,
+    largeContentPadding: 24,
   },
 };
 
 export const radii = {
   none: 0,
-  small: 4,
-  default: 8,
-  medium: 10,
-  large: 12,
+  small: 8,
+  default: 14,
+  medium: 18,
+  large: 22,
+  card: 24,
   pill: 999,
 };

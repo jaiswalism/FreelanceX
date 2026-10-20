@@ -23,30 +23,30 @@ export const Badge: React.FC<BadgeProps> = ({
         return {
           bg: colors.semantic.successBackground,
           text: colors.semantic.success,
-          border: 'rgba(94, 230, 181, 0.3)',
+          border: 'rgba(16, 185, 129, 0.25)',
         };
       case 'warning':
         return {
           bg: colors.semantic.warningBackground,
           text: colors.semantic.warning,
-          border: 'rgba(245, 185, 66, 0.3)',
+          border: 'rgba(245, 158, 11, 0.25)',
         };
       case 'danger':
         return {
           bg: colors.semantic.dangerBackground,
           text: colors.semantic.danger,
-          border: 'rgba(255, 92, 92, 0.3)',
+          border: 'rgba(239, 68, 68, 0.25)',
         };
       case 'brand':
         return {
           bg: colors.brand.tint,
           text: colors.brand.primary,
-          border: 'rgba(255, 106, 0, 0.3)',
+          border: 'rgba(91, 77, 255, 0.25)',
         };
       case 'info':
       default:
         return {
-          bg: colors.surface.raised,
+          bg: colors.surface.pressed,
           text: colors.text.secondary,
           border: colors.border.subtle,
         };
@@ -63,8 +63,8 @@ export const Badge: React.FC<BadgeProps> = ({
           borderColor: scheme.border,
           borderWidth: 1,
           borderRadius: radii.pill,
-          paddingHorizontal: 8,
-          paddingVertical: 3,
+          paddingHorizontal: 10,
+          paddingVertical: 4,
           alignSelf: 'flex-start',
         },
         style,
@@ -74,7 +74,8 @@ export const Badge: React.FC<BadgeProps> = ({
         style={{
           color: scheme.text,
           fontSize: typography.scale.caption.fontSize,
-          fontWeight: '600',
+          fontWeight: '700',
+          letterSpacing: 0.3,
         }}
       >
         {label}

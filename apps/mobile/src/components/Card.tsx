@@ -1,11 +1,11 @@
 import React from 'react';
-import { View, ViewStyle } from 'react-native';
+import { View, ViewStyle, StyleSheet } from 'react-native';
 import { defaultTheme } from '../theme';
 
 interface CardProps {
   children: React.ReactNode;
-  style?: ViewStyle;
-  variant?: 'default' | 'raised' | 'elevated';
+  style?: ViewStyle | ViewStyle[];
+  variant?: 'default' | 'raised' | 'elevated' | 'hero' | 'flat';
 }
 
 export const Card: React.FC<CardProps> = ({
@@ -15,27 +15,19 @@ export const Card: React.FC<CardProps> = ({
 }) => {
   const { colors, radii, spacing } = defaultTheme;
 
-  const getBgColor = () => {
-    switch (variant) {
-      case 'raised':
-        return colors.surface.raised;
-      case 'elevated':
-        return colors.background.elevated;
-      default:
-        return colors.surface.default;
-    }
-  };
+  const isHero = variant === 'hero';
 
   return (
     <View
       style={[
+        styles.baseCard,
         {
-          backgroundColor: getBgColor(),
-          borderColor: colors.border.default,
-          borderWidth: 1,
-          borderRadius: radii.medium,
+          backgroundColor: isHero ? colors.brand.primary : colors.surface.default,
+          borderColor: isHero ? colors.brand.soft : colors.border.subtle,
+          borderRadius: radii.large,
           padding: spacing.layout.standardContentPadding,
         },
+        !isHero && styles.shadow,
         style,
       ]}
     >
@@ -43,3 +35,16 @@ export const Card: React.FC<CardProps> = ({
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  baseCard: {
+    borderWidth: 1,
+  },
+  shadow: {
+    shadowColor: '#5B4DFF',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 20,
+    elevation: 3,
+  },
+});

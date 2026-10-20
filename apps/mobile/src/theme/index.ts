@@ -1,8 +1,8 @@
-import { darkColors, lightColors, ThemeColors } from './colors';
+import { friendlyPurpleColors, darkColors, ThemeColors } from './colors';
 import { typography } from './typography';
 import { spacing, radii } from './spacing';
 
-export { darkColors, lightColors, typography, spacing, radii };
+export { friendlyPurpleColors, darkColors, typography, spacing, radii };
 export type { ThemeColors };
 
 export interface Theme {
@@ -14,8 +14,8 @@ export interface Theme {
 }
 
 export const defaultTheme: Theme = {
-  isDark: true,
-  colors: darkColors,
+  isDark: false,
+  colors: friendlyPurpleColors,
   typography,
   spacing,
   radii,

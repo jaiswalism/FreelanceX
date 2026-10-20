@@ -5,10 +5,11 @@ import {
   ActivityIndicator,
   ViewStyle,
   TextStyle,
+  StyleSheet,
 } from 'react-native';
 import { defaultTheme } from '../theme';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'destructive';
+export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'destructive' | 'soft';
 
 interface ButtonProps {
   title: string;
@@ -16,8 +17,9 @@ interface ButtonProps {
   variant?: ButtonVariant;
   disabled?: boolean;
   loading?: boolean;
-  style?: ViewStyle;
+  style?: ViewStyle | ViewStyle[];
   textStyle?: TextStyle;
+  icon?: React.ReactNode;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -28,23 +30,24 @@ export const Button: React.FC<ButtonProps> = ({
   loading = false,
   style,
   textStyle,
+  icon,
 }) => {
   const { colors, typography, radii } = defaultTheme;
 
   const getContainerStyle = (): ViewStyle => {
     const baseStyle: ViewStyle = {
-      height: 48,
-      borderRadius: radii.default,
+      height: 50,
+      borderRadius: radii.medium,
       justifyContent: 'center',
       alignItems: 'center',
-      paddingHorizontal: 20,
+      paddingHorizontal: 22,
       flexDirection: 'row',
     };
 
     if (disabled) {
       return {
         ...baseStyle,
-        backgroundColor: colors.surface.raised,
+        backgroundColor: colors.surface.pressed,
         borderWidth: 1,
         borderColor: colors.border.subtle,
       };
@@ -55,19 +58,29 @@ export const Button: React.FC<ButtonProps> = ({
         return {
           ...baseStyle,
           backgroundColor: colors.brand.primary,
+          shadowColor: colors.brand.primary,
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: 0.25,
+          shadowRadius: 12,
+          elevation: 4,
         };
       case 'secondary':
         return {
           ...baseStyle,
-          backgroundColor: colors.surface.raised,
+          backgroundColor: colors.surface.default,
           borderWidth: 1,
           borderColor: colors.border.default,
+        };
+      case 'soft':
+        return {
+          ...baseStyle,
+          backgroundColor: colors.brand.tint,
         };
       case 'outline':
         return {
           ...baseStyle,
           backgroundColor: 'transparent',
-          borderWidth: 1,
+          borderWidth: 1.5,
           borderColor: colors.brand.primary,
         };
       case 'destructive':
@@ -81,7 +94,7 @@ export const Button: React.FC<ButtonProps> = ({
   const getTextStyle = (): TextStyle => {
     const baseText: TextStyle = {
       fontSize: typography.scale.bodyMedium.fontSize,
-      fontWeight: '600',
+      fontWeight: '700',
     };
 
     if (disabled) {
@@ -96,13 +109,14 @@ export const Button: React.FC<ButtonProps> = ({
       case 'destructive':
         return {
           ...baseText,
-          color: '#090909',
+          color: '#FFFFFF',
         };
       case 'secondary':
         return {
           ...baseText,
           color: colors.text.primary,
         };
+      case 'soft':
       case 'outline':
         return {
           ...baseText,
@@ -113,19 +127,28 @@ export const Button: React.FC<ButtonProps> = ({
 
   return (
     <TouchableOpacity
-      activeOpacity={0.8}
+      activeOpacity={0.82}
       onPress={onPress}
       disabled={disabled || loading}
       style={[getContainerStyle(), style]}
     >
       {loading ? (
         <ActivityIndicator
-          color={variant === 'primary' || variant === 'destructive' ? '#090909' : colors.brand.primary}
+          color={variant === 'primary' || variant === 'destructive' ? '#FFFFFF' : colors.brand.primary}
           size="small"
         />
       ) : (
-        <Text style={[getTextStyle(), textStyle]}>{title}</Text>
+        <>
+          {icon ? <Text style={styles.iconContainer}>{icon}</Text> : null}
+          <Text style={[getTextStyle(), textStyle]}>{title}</Text>
+        </>
       )}
     </TouchableOpacity>
   );
 };
+
+const styles = StyleSheet.create({
+  iconContainer: {
+    marginRight: 8,
+  },
+});

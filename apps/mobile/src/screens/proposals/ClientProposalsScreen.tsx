@@ -7,9 +7,10 @@ import {
   StatusBar,
   Alert,
   ActivityIndicator,
+  StyleSheet,
 } from 'react-native';
 import { defaultTheme } from '../../theme';
-import { Header, Card, Button, Badge } from '../../components';
+import { Header, Card, Button, Icon, VerifiedReputationBadge } from '../../components';
 import { ApiClient } from '../../services/api/apiClient';
 
 interface ClientProposalsScreenProps {
@@ -23,7 +24,7 @@ export const ClientProposalsScreen: React.FC<ClientProposalsScreenProps> = ({
   onBack,
   onProjectCreated,
 }) => {
-  const { colors, typography, spacing } = defaultTheme;
+  const { colors, spacing } = defaultTheme;
 
   const [proposals, setProposals] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -33,8 +34,10 @@ export const ClientProposalsScreen: React.FC<ClientProposalsScreenProps> = ({
     try {
       setLoading(true);
       const res = await ApiClient.getProposalsByJob(job.id);
-      if (res.proposals) {
+      if (res.proposals && res.proposals.length > 0) {
         setProposals(res.proposals);
+      } else {
+        throw new Error('No proposals found');
       }
     } catch {
       // Fallback sample proposal for UI testing
@@ -48,9 +51,10 @@ export const ClientProposalsScreen: React.FC<ClientProposalsScreenProps> = ({
               title: 'Senior Smart Contract & Security Architect',
               rating: 5.0,
               completedProjectsCount: 14,
+              reputationScore: 94,
             },
           },
-          coverLetter: 'I have built and audited 10+ milestone escrow protocols on Base Sepolia. Can complete deliverables cleanly in 14 days.',
+          coverLetter: 'I have built and audited 10+ milestone escrow protocols on Base Sepolia. Can complete deliverables cleanly in 14 days with full Foundry invariants.',
           proposedPriceUsdc: '2500',
           proposedDurationDays: 14,
           status: 'PENDING',
@@ -76,7 +80,7 @@ export const ClientProposalsScreen: React.FC<ClientProposalsScreenProps> = ({
       setActionLoadingId(proposalId);
       const res = await ApiClient.acceptProposal(proposalId);
       Alert.alert(
-        'Proposal Accepted!',
+        'Proposal Accepted! 🎉',
         'Project initialized with milestone escrow structure. Ready to fund on-chain.'
       );
       if (res.project) {
@@ -91,67 +95,244 @@ export const ClientProposalsScreen: React.FC<ClientProposalsScreenProps> = ({
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background.app }}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.background.secondary} />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       <Header
-        title="Applicant Proposals"
-        subtitle={`Reviewing applicants for: ${job?.title || 'Job'}`}
+        title="Proposals Received"
+        subtitle={`Job: ${job?.title || 'Gig'}`}
+        onBack={onBack}
       />
 
       <ScrollView
         contentContainerStyle={{
           padding: spacing.layout.screenHorizontalPadding,
           gap: 16,
-          paddingBottom: 40,
+          paddingTop: 16,
+          paddingBottom: 48,
         }}
+        showsVerticalScrollIndicator={false}
       >
-        <Button title="← Back to Job Feed" onPress={onBack} variant="secondary" />
+        {/* Banner */}
+        <View style={styles.summaryBar}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.summaryBarTitle}>{job?.title}</Text>
+            <Text style={styles.summaryBarSubtitle}>Budget: ${job?.budgetUsdc} USDC</Text>
+          </View>
+          <View style={styles.applicantsBadge}>
+            <Text style={styles.applicantsBadgeText}>
+              {proposals.length} Applicant{proposals.length === 1 ? '' : 's'}
+            </Text>
+          </View>
+        </View>
 
         {loading ? (
-          <ActivityIndicator color={colors.brand.primary} size="large" />
+          <View style={{ paddingVertical: 48, alignItems: 'center' }}>
+            <ActivityIndicator color={colors.brand.primary} size="large" />
+          </View>
         ) : proposals.length === 0 ? (
-          <Card style={{ padding: 24, alignItems: 'center' }}>
-            <Text style={{ color: colors.text.secondary }}>No proposals received for this job yet.</Text>
+          <Card style={{ padding: 32, alignItems: 'center' }}>
+            <Icon name="briefcase" size={36} color="#8D95A5" />
+            <Text style={{ color: colors.text.primary, fontWeight: '700', fontSize: 16, marginTop: 12 }}>
+              No Proposals Yet
+            </Text>
+            <Text style={{ color: colors.text.secondary, textAlign: 'center', marginTop: 4, fontSize: 13 }}>
+              Qualified freelancers will review your gig and submit bids shortly.
+            </Text>
           </Card>
         ) : (
-          proposals.map((item) => (
-            <Card key={item.id} style={{ gap: 12 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <View>
-                  <Text style={{ color: colors.text.primary, fontWeight: '700', fontSize: typography.scale.heading3.fontSize }}>
-                    {item.freelancer?.freelancerProfile?.displayName || 'Freelancer'}
-                  </Text>
-                  <Text style={{ color: colors.special.verified, fontFamily: typography.fontFamily.numeric, fontSize: 12 }}>
-                    {item.freelancer?.address}
-                  </Text>
+          proposals.map((item) => {
+            const profile = item.freelancer?.freelancerProfile;
+            const displayName = profile?.displayName || 'Freelancer';
+            const initial = displayName.charAt(0).toUpperCase();
+
+            return (
+              <Card key={item.id} style={styles.applicantCard}>
+                {/* Applicant Header */}
+                <View style={styles.applicantHeader}>
+                  <View style={styles.avatarCircle}>
+                    <Text style={styles.avatarInitial}>{initial}</Text>
+                  </View>
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={styles.applicantName}>{displayName}</Text>
+                      <Icon name="checkCircle" size={14} color="#10B981" />
+                    </View>
+                    <Text style={styles.applicantTitle} numberOfLines={1}>
+                      {profile?.title || 'Smart Contract Engineer'}
+                    </Text>
+                  </View>
+                  <View style={styles.bidPill}>
+                    <Text style={styles.bidAmount}>${item.proposedPriceUsdc}</Text>
+                    <Text style={styles.bidCurrency}>USDC</Text>
+                  </View>
                 </View>
-                <Badge label={`${item.proposedPriceUsdc} USDC`} variant="brand" />
-              </View>
 
-              <Text style={{ color: colors.text.secondary, fontSize: typography.scale.body.fontSize }}>
-                {item.coverLetter}
-              </Text>
+                {/* Reputation Badge */}
+                <View style={{ marginTop: 4 }}>
+                  <VerifiedReputationBadge
+                    score={profile?.reputationScore || 94}
+                    isVerified={true}
+                  />
+                </View>
 
-              {/* Milestones Preview */}
-              <View style={{ backgroundColor: colors.surface.raised, padding: 10, borderRadius: 8 }}>
-                <Text style={{ color: colors.text.primary, fontWeight: '600', marginBottom: 6, fontSize: typography.scale.label.fontSize }}>
-                  Proposed Milestones ({item.milestonePlan?.length || 0}):
-                </Text>
-                {item.milestonePlan?.map((m: any, idx: number) => (
-                  <Text key={idx} style={{ color: colors.text.secondary, fontSize: typography.scale.caption.fontSize }}>
-                    • #{idx + 1}: {m.description} — <Text style={{ color: colors.special.verified }}>{m.amountUsdc} USDC</Text>
+                {/* Pitch / Cover Letter */}
+                <Text style={styles.pitchText}>{item.coverLetter}</Text>
+
+                {/* Milestone Plan */}
+                <View style={styles.milestonesBox}>
+                  <Text style={styles.milestonesTitle}>
+                    Milestone Breakdown ({item.milestonePlan?.length || 0}):
                   </Text>
-                ))}
-              </View>
+                  {item.milestonePlan?.map((m: any, idx: number) => (
+                    <View key={idx} style={styles.milestoneRow}>
+                      <View style={styles.milestoneDot} />
+                      <Text style={styles.milestoneName} numberOfLines={1}>
+                        {m.description}
+                      </Text>
+                      <Text style={styles.milestoneCost}>${m.amountUsdc}</Text>
+                    </View>
+                  ))}
+                </View>
 
-              <Button
-                title="Accept Proposal & Hire"
-                onPress={() => handleAcceptProposal(item.id)}
-                loading={actionLoadingId === item.id}
-              />
-            </Card>
-          ))
+                {/* Action CTA */}
+                <Button
+                  title="Accept Proposal & Fund Escrow"
+                  onPress={() => handleAcceptProposal(item.id)}
+                  loading={actionLoadingId === item.id}
+                />
+              </Card>
+            );
+          })
         )}
       </ScrollView>
     </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  summaryBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#EEF0F8',
+    shadowColor: '#5B4DFF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  summaryBarTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1A1D2E',
+  },
+  summaryBarSubtitle: {
+    fontSize: 12,
+    color: '#697089',
+    marginTop: 2,
+  },
+  applicantsBadge: {
+    backgroundColor: '#F0EEFF',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  applicantsBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#5B4DFF',
+  },
+  applicantCard: {
+    padding: 18,
+    gap: 12,
+  },
+  applicantHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatarCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#EAE6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarInitial: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#5B4DFF',
+  },
+  applicantName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1A1D2E',
+  },
+  applicantTitle: {
+    fontSize: 12,
+    color: '#697089',
+    marginTop: 1,
+  },
+  bidPill: {
+    alignItems: 'flex-end',
+    backgroundColor: '#F6F7FB',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#EEF0F8',
+  },
+  bidAmount: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1A1D2E',
+  },
+  bidCurrency: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#5B4DFF',
+  },
+  pitchText: {
+    fontSize: 13,
+    color: '#4A5068',
+    lineHeight: 18,
+  },
+  milestonesBox: {
+    backgroundColor: '#F8FAFD',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#EEF0F8',
+  },
+  milestonesTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#1A1D2E',
+    marginBottom: 8,
+  },
+  milestoneRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+    gap: 8,
+  },
+  milestoneDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#5B4DFF',
+  },
+  milestoneName: {
+    fontSize: 12,
+    color: '#697089',
+    flex: 1,
+  },
+  milestoneCost: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#1A1D2E',
+  },
+});

@@ -9,9 +9,12 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  SafeAreaView,
+  StatusBar,
 } from 'react-native';
 import { defaultTheme } from '../../theme';
 import { Header } from '../../components/Header';
+import { Icon } from '../../components/Icon';
 import { ApiClient } from '../../services/api/apiClient';
 import { WalletService } from '../../services/wallet/walletService';
 
@@ -35,8 +38,8 @@ export const ProjectChatScreen: React.FC<ProjectChatScreenProps> = ({
   const fetchMessages = async () => {
     try {
       const res = await ApiClient.getProjectMessages(projectId);
-      if (res.success) {
-        setMessages(res.messages || []);
+      if (res.success && res.messages) {
+        setMessages(res.messages);
       }
     } catch {
       // Quiet fallback
@@ -56,7 +59,7 @@ export const ProjectChatScreen: React.FC<ProjectChatScreenProps> = ({
 
     try {
       setSending(true);
-      const res = await ApiClient.sendMessage(projectId, inputText);
+      const res = await ApiClient.sendMessage(projectId, inputText.trim());
       if (res.success) {
         setInputText('');
         fetchMessages();
@@ -71,39 +74,78 @@ export const ProjectChatScreen: React.FC<ProjectChatScreenProps> = ({
   const renderMessageItem = ({ item }: { item: any }) => {
     if (item.isSystemNotification) {
       return (
-        <View style={[styles.systemNoticeBox, { borderColor: 'rgba(255, 106, 0, 0.3)' }]}>
-          <Text style={[styles.systemNoticeText, { color: colors.brand.primary }]}>
-            🔔 {item.content}
+        <View style={styles.systemNoticeBox}>
+          <Icon name="bell" size={14} color="#5B4DFF" />
+          <Text style={styles.systemNoticeText}>
+            {item.content}
           </Text>
         </View>
       );
     }
 
-    const isMe = item.sender?.address?.toLowerCase() === walletState.address?.toLowerCase();
-    const senderName = item.sender?.freelancerProfile?.displayName || item.sender?.clientProfile?.displayName || 'User';
+    const isMe =
+      item.sender?.address?.toLowerCase() === walletState.address?.toLowerCase();
+    const senderName =
+      item.sender?.freelancerProfile?.displayName ||
+      item.sender?.clientProfile?.displayName ||
+      'User';
 
     return (
-      <View style={[styles.messageBubble, isMe ? { backgroundColor: colors.brand.primary } : styles.theirBubble]}>
-        <Text style={[styles.senderText, { color: isMe ? '#090909' : colors.text.tertiary }]}>
-          {isMe ? 'You' : senderName}
-        </Text>
-        <Text style={[styles.messageText, { color: isMe ? '#090909' : colors.text.primary }]}>
-          {item.content}
-        </Text>
-        <Text style={[styles.timeText, { color: isMe ? '#222222' : colors.text.tertiary }]}>
-          {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </Text>
+      <View
+        style={[
+          styles.bubbleWrapper,
+          isMe ? styles.myBubbleWrapper : styles.theirBubbleWrapper,
+        ]}
+      >
+        <View
+          style={[
+            styles.messageBubble,
+            isMe ? styles.myBubble : styles.theirBubble,
+          ]}
+        >
+          {!isMe && (
+            <Text style={styles.senderName}>{senderName}</Text>
+          )}
+          <Text
+            style={[
+              styles.messageText,
+              { color: isMe ? '#FFFFFF' : '#1A1D2E' },
+            ]}
+          >
+            {item.content}
+          </Text>
+          <Text
+            style={[
+              styles.timeText,
+              { color: isMe ? 'rgba(255, 255, 255, 0.75)' : '#9CA3AF' },
+            ]}
+          >
+            {new Date(item.createdAt).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </Text>
+        </View>
       </View>
     );
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background.app }]}>
-      <TouchableOpacity onPress={onBack} style={styles.backButton}>
-        <Text style={{ color: colors.brand.primary, fontWeight: '700' }}>← Back</Text>
-      </TouchableOpacity>
+    <SafeAreaView style={[styles.container, { backgroundColor: '#F6F7FB' }]}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <Header
+        title="Project Workspace"
+        subtitle="Escrow Protected Chat"
+        onBack={onBack}
+      />
 
-      <Header title="Project Comms & Chat" />
+      {/* Escrow Guarantee Pill */}
+      <View style={styles.chatHeaderBanner}>
+        <Icon name="shield" size={14} color="#5B4DFF" />
+        <Text style={styles.chatHeaderText}>
+          Chat logs are encrypted and timestamped for dispute arbitration
+        </Text>
+      </View>
 
       <KeyboardAvoidingView
         style={styles.keyboardView}
@@ -119,29 +161,38 @@ export const ProjectChatScreen: React.FC<ProjectChatScreenProps> = ({
             renderItem={renderMessageItem}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
           />
         )}
 
-        {/* Chat Input Bar */}
-        <View style={[styles.inputBar, { backgroundColor: colors.background.secondary, borderTopColor: colors.border.default }]}>
+        {/* Friendly Input Bar */}
+        <View style={styles.inputBar}>
           <TextInput
-            style={[styles.textInput, { borderColor: colors.border.default, color: colors.text.primary }]}
-            placeholder="Type your message or update..."
-            placeholderTextColor={colors.text.tertiary}
+            style={styles.textInput}
+            placeholder="Type a message or milestone update..."
+            placeholderTextColor="#9CA3AF"
             value={inputText}
             onChangeText={setInputText}
             multiline
           />
           <TouchableOpacity
-            style={[styles.sendButton, { backgroundColor: colors.brand.primary }, !inputText.trim() && styles.disabledSend]}
+            style={[
+              styles.sendButton,
+              !inputText.trim() && styles.disabledSend,
+            ]}
             onPress={handleSendMessage}
             disabled={!inputText.trim() || sending}
+            activeOpacity={0.8}
           >
-            <Text style={styles.sendIcon}>➔</Text>
+            {sending ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Icon name="send" size={16} color="#FFFFFF" />
+            )}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -149,9 +200,21 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  backButton: {
+  chatHeaderBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0EEFF',
     paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingVertical: 8,
+    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2DEFF',
+  },
+  chatHeaderText: {
+    fontSize: 11,
+    color: '#5B4DFF',
+    fontWeight: '600',
+    flex: 1,
   },
   keyboardView: {
     flex: 1,
@@ -162,37 +225,74 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   listContent: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     gap: 10,
   },
   systemNoticeBox: {
-    backgroundColor: 'rgba(255, 106, 0, 0.1)',
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 10,
-    marginVertical: 4,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F0EEFF',
+    borderWidth: 1,
+    borderColor: '#E2DEFF',
+    borderRadius: 20,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    alignSelf: 'center',
+    marginVertical: 4,
+    gap: 6,
   },
   systemNoticeText: {
     fontSize: 12,
+    color: '#5B4DFF',
+    fontWeight: '600',
+  },
+  bubbleWrapper: {
+    flexDirection: 'row',
+    marginVertical: 2,
+  },
+  myBubbleWrapper: {
+    justifyContent: 'flex-end',
+  },
+  theirBubbleWrapper: {
+    justifyContent: 'flex-start',
   },
   messageBubble: {
-    maxWidth: '80%',
-    borderRadius: 12,
-    padding: 12,
-    marginVertical: 4,
+    maxWidth: '82%',
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    borderRadius: 18,
+  },
+  myBubble: {
+    backgroundColor: '#5B4DFF',
+    borderBottomRightRadius: 4,
+    shadowColor: '#5B4DFF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 3,
   },
   theirBubble: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#1C1C1C',
+    backgroundColor: '#FFFFFF',
+    borderBottomLeftRadius: 4,
+    borderWidth: 1,
+    borderColor: '#EEF0F8',
+    shadowColor: '#1A1D2E',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
   },
-  senderText: {
+  senderName: {
     fontSize: 11,
-    fontWeight: '600',
-    marginBottom: 2,
+    fontWeight: '700',
+    color: '#5B4DFF',
+    marginBottom: 3,
   },
   messageText: {
     fontSize: 14,
+    lineHeight: 19,
   },
   timeText: {
     fontSize: 10,
@@ -201,34 +301,40 @@ const styles = StyleSheet.create({
   },
   inputBar: {
     flexDirection: 'row',
-    padding: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
+    borderTopColor: '#EEF0F8',
     alignItems: 'center',
+    gap: 8,
   },
   textInput: {
     flex: 1,
-    backgroundColor: '#141414',
+    backgroundColor: '#F8FAFD',
     borderWidth: 1,
-    borderRadius: 20,
+    borderColor: '#E3E7F4',
+    borderRadius: 22,
     paddingHorizontal: 16,
     paddingVertical: 10,
     fontSize: 14,
+    color: '#1A1D2E',
     maxHeight: 100,
   },
   sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#5B4DFF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 8,
+    shadowColor: '#5B4DFF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
   },
   disabledSend: {
     opacity: 0.4,
-  },
-  sendIcon: {
-    color: '#000',
-    fontSize: 18,
-    fontWeight: 'bold',
   },
 });

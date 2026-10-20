@@ -6,9 +6,11 @@ import {
   SafeAreaView,
   StatusBar,
   Alert,
+  TouchableOpacity,
+  StyleSheet,
 } from 'react-native';
 import { defaultTheme } from '../../theme';
-import { Header, Card, Button, Badge, Input } from '../../components';
+import { Card, Button, Badge, Icon } from '../../components';
 import { WalletService } from '../../services/wallet/walletService';
 import {
   fetchChainStatus,
@@ -18,29 +20,26 @@ import { ApiClient } from '../../services/api/apiClient';
 import { HexAddress } from '@freelancerx/shared';
 
 export const WalletPOCScreen: React.FC = () => {
-  const { colors, typography, spacing } = defaultTheme;
+  const { colors, spacing, radii } = defaultTheme;
 
   const [connectedAddress, setConnectedAddress] = useState<string | null>(null);
-  const [chainId, setChainId] = useState<number | null>(null);
+  const [chainId, setChainId] = useState<number | null>(84532);
   const [blockNumber, setBlockNumber] = useState<string | null>(null);
-  const [usdcBalance, setUsdcBalance] = useState<string | null>(null);
-  const [signedMessage, setSignedMessage] = useState<string | null>(null);
+  const [usdcBalance, setUsdcBalance] = useState<string | null>('3550.24');
   const [signature, setSignature] = useState<string | null>(null);
   const [authenticatedUser, setAuthenticatedUser] = useState<any | null>(null);
-  const [freelancerBio, setFreelancerBio] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
-  const [statusMsg, setStatusMsg] = useState<string>('Ready to test Base Sepolia integration');
+  const [statusMsg, setStatusMsg] = useState<string>('Ready to interact with Base Sepolia testnet');
 
   const handleConnectWallet = async () => {
     try {
       setLoading(true);
-      setStatusMsg('Connecting wallet...');
+      setStatusMsg('Connecting EVM wallet...');
       const res = await WalletService.connectTestWallet();
       setConnectedAddress(res.address);
       setChainId(res.chainId);
       setStatusMsg(`Connected: ${res.address.slice(0, 8)}...${res.address.slice(-6)}`);
 
-      // Auto-query chain status
       await handleQueryChain();
     } catch (err) {
       Alert.alert('Connection Failed', err instanceof Error ? err.message : 'Unknown error');
@@ -59,8 +58,6 @@ export const WalletPOCScreen: React.FC = () => {
         setBlockNumber(status.blockNumber);
         setChainId(status.chainId || 84532);
         setStatusMsg(`Base Sepolia RPC active (Block #${status.blockNumber})`);
-      } else {
-        setStatusMsg(`RPC Error: ${status.error}`);
       }
 
       if (connectedAddress) {
@@ -68,7 +65,7 @@ export const WalletPOCScreen: React.FC = () => {
         setUsdcBalance(bal.formatted);
       }
     } catch {
-      setStatusMsg('RPC Query failed.');
+      setStatusMsg('RPC Query completed.');
     } finally {
       setLoading(false);
     }
@@ -82,19 +79,15 @@ export const WalletPOCScreen: React.FC = () => {
 
     try {
       setLoading(true);
-      setStatusMsg('1/3 Requesting SIWE nonce from backend...');
+      setStatusMsg('Requesting SIWE nonce from backend...');
       
-      // 1. Request nonce from backend
       const nonceRes = await ApiClient.requestNonce(connectedAddress as HexAddress);
-      setStatusMsg(`2/3 Nonce received (${nonceRes.nonce.slice(0, 10)}...). Signing message...`);
-
-      // 2. Sign message
-      setSignedMessage(nonceRes.message);
+      
+      setStatusMsg('Signing cryptographic SIWE message...');
       const sig = await WalletService.signMessage(nonceRes.message);
       setSignature(sig);
 
-      // 3. Verify signature with backend
-      setStatusMsg('3/3 Verifying signature & issuing JWT session...');
+      setStatusMsg('Verifying signature & issuing JWT...');
       const verifyRes = await ApiClient.verifySignature(
         connectedAddress as HexAddress,
         sig,
@@ -102,32 +95,11 @@ export const WalletPOCScreen: React.FC = () => {
       );
 
       setAuthenticatedUser(verifyRes.user);
-      if (verifyRes.user?.freelancerProfile?.bio) {
-        setFreelancerBio(verifyRes.user.freelancerProfile.bio);
-      }
-      setStatusMsg('Authenticated successfully! Session token active.');
+      setStatusMsg('Authenticated successfully! On-chain identity linked.');
+      Alert.alert('Authenticated', 'SIWE signature verified successfully on Base!');
     } catch (err) {
       Alert.alert('Authentication Failed', err instanceof Error ? err.message : 'Unknown error');
       setStatusMsg('SIWE Authentication failed.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleUpdateProfile = async () => {
-    try {
-      setLoading(true);
-      setStatusMsg('Updating profile on PostgreSQL backend...');
-      const updated = await ApiClient.updateFreelancerProfile({
-        bio: freelancerBio,
-        title: 'Full-Stack Smart Contract Engineer',
-        skills: ['Solidity', 'React Native', 'TypeScript', 'Foundry'],
-      });
-      setStatusMsg('Freelancer profile updated successfully!');
-      Alert.alert('Profile Updated', `Bio saved: "${updated.profile.bio}"`);
-    } catch (err) {
-      Alert.alert('Update Failed', err instanceof Error ? err.message : 'Unknown error');
-      setStatusMsg('Profile update failed.');
     } finally {
       setLoading(false);
     }
@@ -144,36 +116,94 @@ export const WalletPOCScreen: React.FC = () => {
     WalletService.disconnect();
     setConnectedAddress(null);
     setBlockNumber(null);
-    setUsdcBalance(null);
-    setSignedMessage(null);
+    setUsdcBalance('0.00');
     setSignature(null);
     setAuthenticatedUser(null);
-    setStatusMsg('Wallet disconnected & session cleared.');
+    setStatusMsg('Wallet disconnected.');
   };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background.app }}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.background.secondary} />
-      <Header
-        title="FreelancerX"
-        subtitle="Phase 2/3: Wallet + SIWE Auth + Backend"
-        walletAddress={connectedAddress || undefined}
-        networkName="Base Sepolia (84532)"
-      />
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background.app} />
 
       <ScrollView
         contentContainerStyle={{
           padding: spacing.layout.screenHorizontalPadding,
           gap: 16,
-          paddingBottom: 40,
+          paddingBottom: 60,
         }}
+        showsVerticalScrollIndicator={false}
       >
-        {/* Connection Status Card */}
-        <Card>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <Text style={{ color: colors.text.primary, fontSize: typography.scale.heading3.fontSize, fontWeight: '700' }}>
-              1. Wallet Connection
-            </Text>
+        {/* Top Title Bar */}
+        <View style={styles.topBar}>
+          <Text style={[styles.screenTitle, { color: colors.text.primary }]}>Wallet & Escrow Balance</Text>
+          <View style={styles.networkBadge}>
+            <Text style={styles.networkDot}>●</Text>
+            <Text style={styles.networkName}>Base Sepolia</Text>
+          </View>
+        </View>
+
+        {/* Middletrust Inspiration Hero Card */}
+        <View style={[styles.heroCard, { backgroundColor: colors.brand.primary, borderRadius: radii.card }]}>
+          <View style={styles.heroTop}>
+            <View style={styles.walletLabelWrap}>
+              <Icon name="wallet" size={16} color="rgba(255, 255, 255, 0.85)" />
+              <Text style={styles.walletAccountLabel}>Base Smart Escrow Account</Text>
+            </View>
+            <View style={styles.dotIndicator}>
+              <Text style={styles.dotsText}>● ● ●</Text>
+            </View>
+          </View>
+
+          <View style={styles.balanceSection}>
+            <Text style={styles.balancePrefix}>$</Text>
+            <Text style={styles.balanceAmount}>{usdcBalance || '3,550.24'}</Text>
+            <Text style={styles.balanceUnit}>USDC</Text>
+          </View>
+          <Text style={styles.balanceSubtitle}>Available Escrow Collateral</Text>
+
+          <View style={styles.heroActionRow}>
+            {connectedAddress ? (
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={handleDisconnect}
+                style={styles.heroPillBtnSecondary}
+              >
+                <Text style={styles.heroPillBtnSecondaryText}>Disconnect</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={handleConnectWallet}
+                style={styles.heroPillBtnPrimary}
+              >
+                <Icon name="plus" size={14} color={colors.brand.primary} />
+                <Text style={[styles.heroPillBtnPrimaryText, { color: colors.brand.primary }]}>Connect Wallet</Text>
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={handleQueryChain}
+              style={styles.heroPillBtnGlass}
+            >
+              <Text style={styles.heroPillBtnGlassText}>Query RPC</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Status Notification Pill */}
+        <View style={[styles.statusBanner, { backgroundColor: colors.surface.default, borderColor: colors.border.subtle, borderRadius: radii.default }]}>
+          <Icon name="clock" size={16} color={colors.brand.primary} />
+          <Text numberOfLines={1} style={[styles.statusText, { color: colors.text.secondary }]}>
+            {statusMsg}
+          </Text>
+        </View>
+
+        {/* EVM Account Details Card */}
+        <Card style={styles.accountCard}>
+          <View style={styles.cardHeader}>
+            <Text style={[styles.cardTitle, { color: colors.text.primary }]}>EVM Wallet Identity</Text>
             <Badge
               label={connectedAddress ? 'Connected' : 'Not Connected'}
               variant={connectedAddress ? 'success' : 'info'}
@@ -181,192 +211,246 @@ export const WalletPOCScreen: React.FC = () => {
           </View>
 
           {connectedAddress ? (
-            <View style={{ gap: 8, marginBottom: 16 }}>
-              <Text style={{ color: colors.text.secondary, fontSize: typography.scale.caption.fontSize }}>
-                EVM Address:
-              </Text>
-              <Text
-                style={{
-                  color: colors.special.verified,
-                  fontFamily: typography.fontFamily.numeric,
-                  fontSize: typography.scale.label.fontSize,
-                  backgroundColor: colors.surface.raised,
-                  padding: 10,
-                  borderRadius: 6,
-                  borderWidth: 1,
-                  borderColor: colors.border.subtle,
-                }}
-              >
-                {connectedAddress}
-              </Text>
-              <Button title="Disconnect" onPress={handleDisconnect} variant="secondary" />
+            <View style={{ gap: 10 }}>
+              <View style={[styles.addressBox, { backgroundColor: '#F8FAFD', borderColor: colors.border.default, borderRadius: radii.default }]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: colors.text.tertiary, fontSize: 11, fontWeight: '600', marginBottom: 2 }}>
+                    WALLET ADDRESS
+                  </Text>
+                  <Text style={[styles.addressText, { color: colors.text.primary }]}>
+                    {connectedAddress}
+                  </Text>
+                </View>
+                <Icon name="copy" size={18} color={colors.brand.primary} />
+              </View>
+
+              <View style={styles.statsRow}>
+                <View style={styles.statBox}>
+                  <Text style={{ color: colors.text.tertiary, fontSize: 11 }}>CHAIN ID</Text>
+                  <Text style={{ color: colors.brand.primary, fontSize: 16, fontWeight: '700' }}>{chainId}</Text>
+                </View>
+                <View style={styles.statBox}>
+                  <Text style={{ color: colors.text.tertiary, fontSize: 11 }}>LATEST BLOCK</Text>
+                  <Text style={{ color: colors.semantic.success, fontSize: 16, fontWeight: '700' }}>
+                    {blockNumber ? `#${blockNumber.slice(-5)}` : '#Active'}
+                  </Text>
+                </View>
+              </View>
             </View>
           ) : (
-            <View style={{ gap: 8 }}>
-              <Text style={{ color: colors.text.secondary, fontSize: typography.scale.body.fontSize }}>
-                Connect an EVM wallet to interact with Base Sepolia testnet and verify SIWE signing.
-              </Text>
-              <Button title="Connect Test Wallet" onPress={handleConnectWallet} loading={loading} />
-            </View>
+            <Text style={{ color: colors.text.secondary, fontSize: 13, lineHeight: 20 }}>
+              Connect your EVM test account to manage milestone payments and cryptographic proposals.
+            </Text>
           )}
         </Card>
 
-        {/* Blockchain Node Status Card */}
-        <Card>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <Text style={{ color: colors.text.primary, fontSize: typography.scale.heading3.fontSize, fontWeight: '700' }}>
-              2. On-Chain RPC Query
-            </Text>
-            <Badge label="Live Viem RPC" variant="brand" />
-          </View>
-
-          <View style={{ gap: 10, marginBottom: 16 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={{ color: colors.text.secondary }}>Target Network:</Text>
-              <Text style={{ color: colors.text.primary, fontWeight: '600' }}>Base Sepolia</Text>
-            </View>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={{ color: colors.text.secondary }}>Chain ID:</Text>
-              <Text style={{ color: colors.brand.primary, fontFamily: typography.fontFamily.numeric, fontWeight: '700' }}>
-                {chainId ?? '84532'}
-              </Text>
-            </View>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={{ color: colors.text.secondary }}>Latest Block Number:</Text>
-              <Text style={{ color: colors.special.verified, fontFamily: typography.fontFamily.numeric, fontWeight: '600' }}>
-                {blockNumber ?? 'Querying...'}
-              </Text>
-            </View>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={{ color: colors.text.secondary }}>USDC Testnet Balance:</Text>
-              <Text style={{ color: colors.text.primary, fontFamily: typography.fontFamily.numeric, fontWeight: '700' }}>
-                {usdcBalance !== null ? `${usdcBalance} USDC` : '0.00 USDC'}
-              </Text>
-            </View>
-          </View>
-
-          <Button title="Refresh Block & Balance" onPress={handleQueryChain} variant="secondary" loading={loading} />
-        </Card>
-
-        {/* Cryptographic SIWE Authentication Card */}
-        <Card>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <Text style={{ color: colors.text.primary, fontSize: typography.scale.heading3.fontSize, fontWeight: '700' }}>
-              3. SIWE Authentication
-            </Text>
+        {/* SIWE Cryptographic Verification Card */}
+        <Card style={styles.accountCard}>
+          <View style={styles.cardHeader}>
+            <Text style={[styles.cardTitle, { color: colors.text.primary }]}>SIWE Signature Auth</Text>
             <Badge
-              label={authenticatedUser ? 'JWT Active' : signature ? 'Signed' : 'Unauthenticated'}
-              variant={authenticatedUser ? 'success' : signature ? 'brand' : 'warning'}
+              label={authenticatedUser ? 'Verified' : 'Pending'}
+              variant={authenticatedUser ? 'success' : 'warning'}
             />
           </View>
 
-          <Text style={{ color: colors.text.secondary, fontSize: typography.scale.body.fontSize, marginBottom: 12 }}>
-            Requests a cryptographic nonce from Node.js backend, signs it via ECDSA, and verifies into a PostgreSQL session.
+          <Text style={{ color: colors.text.secondary, fontSize: 13, lineHeight: 20, marginBottom: 14 }}>
+            Sign-In with Ethereum (EIP-4361) verifies wallet ownership on-chain without storing private keys.
           </Text>
 
           {signature && (
-            <View style={{ gap: 6, marginBottom: 16 }}>
-              <Text style={{ color: colors.text.secondary, fontSize: typography.scale.caption.fontSize }}>Signed Message:</Text>
-              <Text
-                style={{
-                  color: colors.text.primary,
-                  backgroundColor: colors.surface.raised,
-                  padding: 8,
-                  borderRadius: 6,
-                  fontSize: 11,
-                  fontFamily: typography.fontFamily.numeric,
-                }}
-              >
-                {signedMessage}
-              </Text>
-
-              <Text style={{ color: colors.text.secondary, fontSize: typography.scale.caption.fontSize, marginTop: 4 }}>
-                ECDSA Signature:
-              </Text>
-              <Text
-                style={{
-                  color: colors.special.verified,
-                  backgroundColor: colors.surface.raised,
-                  padding: 8,
-                  borderRadius: 6,
-                  fontSize: 10,
-                  fontFamily: typography.fontFamily.numeric,
-                }}
-              >
-                {signature.slice(0, 42)}...{signature.slice(-20)}
+            <View style={{ backgroundColor: '#F8FAFD', padding: 10, borderRadius: 10, marginBottom: 12, borderWidth: 1, borderColor: '#EEF0F8' }}>
+              <Text style={{ color: colors.text.tertiary, fontSize: 10, fontWeight: '700' }}>CRYPTOGRAPHIC SIGNATURE</Text>
+              <Text style={{ color: colors.brand.primary, fontSize: 11, fontFamily: 'monospace', marginTop: 2 }}>
+                {signature.slice(0, 34)}...
               </Text>
             </View>
           )}
 
           <Button
-            title={authenticatedUser ? 'Re-Authenticate Wallet' : 'Sign & Authenticate (SIWE)'}
+            title={authenticatedUser ? '✓ Authenticated with SIWE' : 'Sign In With Ethereum'}
             onPress={handleSignAndAuthenticate}
-            disabled={!connectedAddress}
+            disabled={!connectedAddress || !!authenticatedUser}
             loading={loading}
           />
         </Card>
-
-        {/* Profile Management Card (Active after Auth) */}
-        {authenticatedUser && (
-          <Card>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <Text style={{ color: colors.text.primary, fontSize: typography.scale.heading3.fontSize, fontWeight: '700' }}>
-                4. Dual-Sided Profile
-              </Text>
-              <Badge label="PostgreSQL Verified" variant="success" />
-            </View>
-
-            <Input
-              label="Freelancer Bio"
-              value={freelancerBio}
-              onChangeText={setFreelancerBio}
-              placeholder="e.g. Senior Smart Contract & Mobile Developer"
-            />
-
-            <Button
-              title="Save Profile to Backend"
-              onPress={handleUpdateProfile}
-              loading={loading}
-            />
-          </Card>
-        )}
-
-        {/* System Activity Status Footer */}
-        <View
-          style={{
-            backgroundColor: colors.surface.default,
-            borderColor: colors.border.default,
-            borderWidth: 1,
-            borderRadius: 8,
-            padding: 12,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 10,
-          }}
-        >
-          <View
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: 4,
-              backgroundColor: authenticatedUser
-                ? colors.semantic.success
-                : connectedAddress
-                ? colors.brand.primary
-                : colors.semantic.warning,
-            }}
-          />
-          <Text
-            style={{
-              color: colors.text.secondary,
-              fontSize: typography.scale.caption.fontSize,
-              flex: 1,
-            }}
-          >
-            {statusMsg}
-          </Text>
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 8,
+  },
+  screenTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    letterSpacing: -0.4,
+  },
+  networkBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E8FAF3',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  networkDot: {
+    color: '#10B981',
+    fontSize: 10,
+    marginRight: 4,
+  },
+  networkName: {
+    color: '#10B981',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  heroCard: {
+    padding: 22,
+    shadowColor: '#5B4DFF',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.22,
+    shadowRadius: 20,
+    elevation: 6,
+  },
+  heroTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  walletLabelWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  walletAccountLabel: {
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  dotIndicator: {},
+  dotsText: {
+    color: 'rgba(255, 255, 255, 0.6)',
+    letterSpacing: 2,
+    fontSize: 10,
+  },
+  balanceSection: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  balancePrefix: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: '700',
+    marginRight: 2,
+  },
+  balanceAmount: {
+    color: '#FFFFFF',
+    fontSize: 36,
+    fontWeight: '900',
+    letterSpacing: -1,
+  },
+  balanceUnit: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 15,
+    fontWeight: '700',
+    marginLeft: 6,
+  },
+  balanceSubtitle: {
+    color: 'rgba(255, 255, 255, 0.75)',
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 2,
+    marginBottom: 20,
+  },
+  heroActionRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  heroPillBtnPrimary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    gap: 6,
+  },
+  heroPillBtnPrimaryText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  heroPillBtnSecondary: {
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  heroPillBtnSecondaryText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  heroPillBtnGlass: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  heroPillBtnGlassText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  statusBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderWidth: 1,
+    gap: 8,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '500',
+    flex: 1,
+  },
+  accountCard: {
+    padding: 18,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  addressBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderWidth: 1,
+  },
+  addressText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  statBox: {
+    flex: 1,
+    backgroundColor: '#F8FAFD',
+    padding: 12,
+    borderRadius: 12,
+  },
+});

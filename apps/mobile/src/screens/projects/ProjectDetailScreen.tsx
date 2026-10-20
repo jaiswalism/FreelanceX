@@ -14,6 +14,7 @@ import { Header } from '../../components/Header';
 import { Card } from '../../components/Card';
 import { Badge } from '../../components/Badge';
 import { Button } from '../../components/Button';
+import { Icon } from '../../components/Icon';
 import { VerifiedReputationBadge } from '../../components/VerifiedReputationBadge';
 import { ProjectChatScreen } from '../messages/ProjectChatScreen';
 import { DisputeResolutionScreen } from '../disputes/DisputeResolutionScreen';
@@ -149,11 +150,11 @@ export const ProjectDetailScreen: React.FC<ProjectDetailScreenProps> = ({
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background.app }]}>
-      <TouchableOpacity onPress={onBack} style={styles.backButton}>
-        <Text style={{ color: colors.brand.primary, fontWeight: '700' }}>← Back to Projects</Text>
-      </TouchableOpacity>
-
-      <Header title="Project Dashboard" />
+      <Header
+        title="Project Workspace"
+        subtitle={project.title}
+        onBack={onBack}
+      />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Project Header Card */}
@@ -213,60 +214,64 @@ export const ProjectDetailScreen: React.FC<ProjectDetailScreenProps> = ({
         </Card>
 
         {/* Tab Selection */}
-        <View style={[styles.tabBar, { backgroundColor: colors.background.secondary }]}>
+        <View style={[styles.tabBar, { backgroundColor: '#FFFFFF', borderRadius: 20 }]}>
           <TouchableOpacity
-            style={[styles.tabButton, activeTab === 'milestones' && { backgroundColor: colors.surface.raised }]}
+            style={[styles.tabButton, activeTab === 'milestones' && { backgroundColor: '#F0EEFF' }]}
             onPress={() => setActiveTab('milestones')}
           >
+            <Icon name="briefcase" size={14} color={activeTab === 'milestones' ? colors.brand.primary : colors.text.tertiary} />
             <Text
               style={[
                 styles.tabText,
                 { color: activeTab === 'milestones' ? colors.brand.primary : colors.text.tertiary },
               ]}
             >
-              Milestones ({project.milestones?.length || 0})
+              Milestones
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.tabButton, activeTab === 'chat' && { backgroundColor: colors.surface.raised }]}
+            style={[styles.tabButton, activeTab === 'chat' && { backgroundColor: '#F0EEFF' }]}
             onPress={() => setActiveTab('chat')}
           >
+            <Icon name="message" size={14} color={activeTab === 'chat' ? colors.brand.primary : colors.text.tertiary} />
             <Text
               style={[
                 styles.tabText,
                 { color: activeTab === 'chat' ? colors.brand.primary : colors.text.tertiary },
               ]}
             >
-              💬 Chat
+              Chat
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.tabButton, activeTab === 'disputes' && { backgroundColor: colors.surface.raised }]}
+            style={[styles.tabButton, activeTab === 'disputes' && { backgroundColor: '#F0EEFF' }]}
             onPress={() => setActiveTab('disputes')}
           >
+            <Icon name="scale" size={14} color={activeTab === 'disputes' ? colors.brand.primary : colors.text.tertiary} />
             <Text
               style={[
                 styles.tabText,
                 { color: activeTab === 'disputes' ? colors.brand.primary : colors.text.tertiary },
               ]}
             >
-              ⚖️ Disputes
+              Disputes
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.tabButton, activeTab === 'onchain' && { backgroundColor: colors.surface.raised }]}
+            style={[styles.tabButton, activeTab === 'onchain' && { backgroundColor: '#F0EEFF' }]}
             onPress={() => setActiveTab('onchain')}
           >
+            <Icon name="shield" size={14} color={activeTab === 'onchain' ? colors.brand.primary : colors.text.tertiary} />
             <Text
               style={[
                 styles.tabText,
                 { color: activeTab === 'onchain' ? colors.brand.primary : colors.text.tertiary },
               ]}
             >
-              On-Chain Info
+              On-Chain
             </Text>
           </TouchableOpacity>
         </View>
@@ -546,9 +551,11 @@ const styles = StyleSheet.create({
   },
   deliverableBox: {
     marginTop: 8,
-    backgroundColor: '#161616',
+    backgroundColor: '#F8FAFD',
+    borderWidth: 1,
+    borderColor: '#EEF0F8',
     padding: 10,
-    borderRadius: 6,
+    borderRadius: 10,
   },
   actionRow: {
     marginTop: 12,
@@ -570,23 +577,26 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0,0,0,0.8)',
+    backgroundColor: 'rgba(26, 29, 46, 0.55)',
     justifyContent: 'center',
     padding: 20,
   },
   modalCard: {
     padding: 20,
+    borderRadius: 20,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
   },
   textInput: {
-    backgroundColor: '#141414',
-    borderWidth: 1,
-    borderRadius: 8,
+    backgroundColor: '#F8FAFD',
+    borderWidth: 1.5,
+    borderColor: '#E3E7F4',
+    borderRadius: 12,
     padding: 12,
     fontSize: 14,
+    color: '#1A1D2E',
   },
   modalButtons: {
     flexDirection: 'row',

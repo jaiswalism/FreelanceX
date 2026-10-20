@@ -5,14 +5,16 @@ import {
   StyleSheet,
   ScrollView,
   TextInput,
-  TouchableOpacity,
   Alert,
+  SafeAreaView,
+  StatusBar,
 } from 'react-native';
 import { defaultTheme } from '../../theme';
 import { Header } from '../../components/Header';
 import { Card } from '../../components/Card';
 import { Badge } from '../../components/Badge';
 import { Button } from '../../components/Button';
+import { Icon } from '../../components/Icon';
 import { ApiClient } from '../../services/api/apiClient';
 import { MobileEscrowService } from '../../services/blockchain/escrowService';
 
@@ -27,7 +29,7 @@ export const DisputeResolutionScreen: React.FC<DisputeResolutionScreenProps> = (
   milestoneIndex = 0,
   onBack,
 }) => {
-  const { colors } = defaultTheme;
+  const { spacing } = defaultTheme;
   const [reason, setReason] = useState<string>('');
   const [evidenceUrl, setEvidenceUrl] = useState<string>('');
   const [submitting, setSubmitting] = useState<boolean>(false);
@@ -36,8 +38,8 @@ export const DisputeResolutionScreen: React.FC<DisputeResolutionScreenProps> = (
   const fetchDisputes = async () => {
     try {
       const res = await ApiClient.getProjectDisputes(projectId);
-      if (res.success) {
-        setDisputes(res.disputes || []);
+      if (res.success && res.disputes) {
+        setDisputes(res.disputes);
       }
     } catch {
       // Quiet fallback
@@ -50,14 +52,14 @@ export const DisputeResolutionScreen: React.FC<DisputeResolutionScreenProps> = (
 
   const handleRaiseOnChainDispute = async () => {
     if (!reason.trim()) {
-      Alert.alert('Required', 'Please enter a reason for initiating the dispute.');
+      Alert.alert('Required Field', 'Please provide a clear reason for initiating this dispute.');
       return;
     }
 
     try {
       setSubmitting(true);
       const payload = MobileEscrowService.encodeRaiseDispute(projectId, milestoneIndex, reason);
-      
+
       await ApiClient.createDispute({
         projectId,
         milestoneIndex,
@@ -66,7 +68,7 @@ export const DisputeResolutionScreen: React.FC<DisputeResolutionScreenProps> = (
       });
 
       Alert.alert(
-        'Dispute Initiated',
+        'Dispute Initiated ⚖️',
         `Dispute submitted to 2-of-3 Multisig Arbitrators. Encoded Tx Target: ${payload.to.substring(0, 10)}...`
       );
 
@@ -81,42 +83,59 @@ export const DisputeResolutionScreen: React.FC<DisputeResolutionScreenProps> = (
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background.app }]}>
-      <TouchableOpacity onPress={onBack} style={styles.backButton}>
-        <Text style={{ color: colors.brand.primary, fontWeight: '700' }}>← Back</Text>
-      </TouchableOpacity>
+    <SafeAreaView style={[styles.container, { backgroundColor: '#F6F7FB' }]}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <Header
+        title="Dispute Arbitration"
+        subtitle="2-of-3 Multisig Protection"
+        onBack={onBack}
+      />
 
-      <Header title="Multisig Dispute Arbitration" />
-
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingHorizontal: spacing.layout.screenHorizontalPadding },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Intro Card */}
-        <Card style={styles.introCard}>
-          <Text style={[styles.introTitle, { color: colors.semantic.warning }]}>2-of-3 Multisig Arbitration</Text>
-          <Text style={[styles.introDesc, { color: colors.text.secondary }]}>
-            Disputes freeze milestone funds on-chain. Independent signers review uploaded evidence and execute multisig consensus (`PAY_FREELANCER`, `REFUND_CLIENT`, or `SPLIT_FUNDS`).
-          </Text>
-        </Card>
+        <View style={styles.introCard}>
+          <View style={styles.introIconCircle}>
+            <Icon name="scale" size={20} color="#D97706" />
+          </View>
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            <Text style={styles.introTitle}>2-of-3 Multisig Arbitration</Text>
+            <Text style={styles.introDesc}>
+              Disputes freeze milestone funds on-chain. Independent signers review submitted evidence to reach consensus (Pay Freelancer, Refund Client, or Split Funds).
+            </Text>
+          </View>
+        </View>
 
         {/* Raise New Dispute Form */}
         <Card style={styles.formCard}>
-          <Text style={[styles.formTitle, { color: colors.text.primary }]}>Initiate Milestone Dispute</Text>
-          <Text style={[styles.formSub, { color: colors.brand.primary }]}>Targeting Milestone #{milestoneIndex + 1}</Text>
+          <View style={styles.formHeader}>
+            <Text style={styles.formTitle}>Initiate Milestone Dispute</Text>
+            <View style={styles.targetBadge}>
+              <Text style={styles.targetBadgeText}>Milestone #{milestoneIndex + 1}</Text>
+            </View>
+          </View>
 
-          <Text style={[styles.inputLabel, { color: colors.text.tertiary }]}>Reason / Incident Details</Text>
+          <Text style={styles.inputLabel}>Reason / Incident Details</Text>
           <TextInput
-            style={[styles.textInput, { borderColor: colors.border.default, color: colors.text.primary, height: 90 }]}
-            placeholder="Describe breach of milestone terms or incomplete deliverable..."
-            placeholderTextColor={colors.text.tertiary}
+            style={styles.textArea}
+            placeholder="Describe breach of milestone terms, incomplete deliverable, or specification dispute..."
+            placeholderTextColor="#9CA3AF"
             multiline
+            numberOfLines={4}
             value={reason}
             onChangeText={setReason}
           />
 
-          <Text style={[styles.inputLabel, { color: colors.text.tertiary }]}>Evidence Link (GitHub PR, IPFS, Chat Log)</Text>
+          <Text style={styles.inputLabel}>Evidence Link (GitHub PR, IPFS, Chat Log)</Text>
           <TextInput
-            style={[styles.textInput, { borderColor: colors.border.default, color: colors.text.primary }]}
+            style={styles.textInput}
             placeholder="https://github.com/... or ipfs://..."
-            placeholderTextColor={colors.text.tertiary}
+            placeholderTextColor="#9CA3AF"
             value={evidenceUrl}
             onChangeText={setEvidenceUrl}
           />
@@ -125,38 +144,61 @@ export const DisputeResolutionScreen: React.FC<DisputeResolutionScreenProps> = (
             title={submitting ? 'Submitting Dispute...' : 'Initiate Dispute'}
             onPress={handleRaiseOnChainDispute}
             loading={submitting}
-            variant="secondary"
-            style={{ marginTop: 16 }}
+            variant="primary"
+            style={{ marginTop: 18 }}
           />
         </Card>
 
         {/* Active & Resolved Disputes */}
-        <Text style={[styles.sectionHeader, { color: colors.text.primary }]}>Project Dispute History</Text>
-        {disputes.map((d, idx) => (
-          <Card key={d.id || idx} style={styles.disputeCard}>
-            <View style={styles.disputeHeader}>
-              <Text style={[styles.disputeTitle, { color: colors.text.primary }]}>Dispute #{idx + 1}</Text>
-              <Badge
-                label={d.isResolved ? 'RESOLVED' : 'PENDING MULTISIG'}
-                variant={d.isResolved ? 'success' : 'danger'}
-              />
-            </View>
-
-            <Text style={[styles.disputeReason, { color: colors.text.secondary }]}>{d.reason}</Text>
-
-            {d.isResolved ? (
-              <View style={styles.resolvedBox}>
-                <Text style={{ color: colors.text.tertiary, fontSize: 11 }}>Multisig Decision:</Text>
-                <Text style={{ color: colors.semantic.success, fontSize: 13, fontWeight: '700' }}>{d.outcome}</Text>
-                <Text style={{ color: colors.text.tertiary, fontSize: 10, marginTop: 2 }}>Tx: {d.resolvedTxHash}</Text>
-              </View>
-            ) : (
-              <Text style={{ color: colors.semantic.warning, fontSize: 12, marginTop: 4 }}>Awaiting 2-of-3 Arbitrator Signatures...</Text>
-            )}
+        <Text style={styles.sectionHeader}>Project Dispute History</Text>
+        {disputes.length === 0 ? (
+          <Card style={{ padding: 24, alignItems: 'center' }}>
+            <Icon name="checkCircle" size={32} color="#10B981" />
+            <Text style={{ color: '#1A1D2E', fontWeight: '700', fontSize: 15, marginTop: 10 }}>
+              No Active Disputes
+            </Text>
+            <Text style={{ color: '#697089', fontSize: 12, marginTop: 4, textAlign: 'center' }}>
+              Project is progressing smoothly with healthy milestone escrow.
+            </Text>
           </Card>
-        ))}
+        ) : (
+          disputes.map((d, idx) => (
+            <Card key={d.id || idx} style={styles.disputeCard}>
+              <View style={styles.disputeHeader}>
+                <Text style={styles.disputeTitle}>Dispute #{idx + 1}</Text>
+                <Badge
+                  label={d.isResolved ? 'RESOLVED' : 'PENDING MULTISIG'}
+                  variant={d.isResolved ? 'success' : 'warning'}
+                />
+              </View>
+
+              <Text style={styles.disputeReason}>{d.reason}</Text>
+
+              {d.isResolved ? (
+                <View style={styles.resolvedBox}>
+                  <Text style={{ color: '#065F46', fontSize: 11, fontWeight: '600' }}>
+                    Multisig Decision:
+                  </Text>
+                  <Text style={{ color: '#10B981', fontSize: 14, fontWeight: '700', marginTop: 2 }}>
+                    {d.outcome}
+                  </Text>
+                  <Text style={{ color: '#697089', fontSize: 10, marginTop: 2, fontFamily: 'monospace' }}>
+                    Tx: {d.resolvedTxHash}
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.pendingBox}>
+                  <Icon name="clock" size={14} color="#D97706" />
+                  <Text style={styles.pendingText}>
+                    Awaiting 2-of-3 Arbitrator Signatures...
+                  </Text>
+                </View>
+              )}
+            </Card>
+          ))
+        )}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -164,56 +206,101 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  backButton: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-  },
   scrollContent: {
-    padding: 16,
+    paddingTop: 16,
+    paddingBottom: 48,
     gap: 16,
   },
   introCard: {
-    backgroundColor: '#1A140E',
-    borderColor: '#F5B942',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF8EA',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  introIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   introTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
+    color: '#92400E',
   },
   introDesc: {
-    fontSize: 13,
-    marginTop: 6,
-    lineHeight: 18,
+    fontSize: 12,
+    color: '#78350F',
+    marginTop: 2,
+    lineHeight: 16,
   },
   formCard: {
-    padding: 16,
+    padding: 18,
+  },
+  formHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
   },
   formTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
+    color: '#1A1D2E',
   },
-  formSub: {
-    fontSize: 12,
-    marginBottom: 12,
+  targetBadge: {
+    backgroundColor: '#F0EEFF',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  targetBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#5B4DFF',
   },
   inputLabel: {
     fontSize: 12,
-    marginTop: 10,
-    marginBottom: 4,
+    fontWeight: '600',
+    color: '#697089',
+    marginTop: 12,
+    marginBottom: 6,
   },
   textInput: {
-    backgroundColor: '#141414',
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
+    backgroundColor: '#F8FAFD',
+    borderWidth: 1.5,
+    borderColor: '#E3E7F4',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
     fontSize: 14,
+    color: '#1A1D2E',
+  },
+  textArea: {
+    backgroundColor: '#F8FAFD',
+    borderWidth: 1.5,
+    borderColor: '#E3E7F4',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    fontSize: 14,
+    color: '#1A1D2E',
+    height: 90,
+    textAlignVertical: 'top',
   },
   sectionHeader: {
     fontSize: 16,
     fontWeight: '700',
+    color: '#1A1D2E',
+    marginTop: 4,
   },
   disputeCard: {
-    padding: 14,
+    padding: 16,
   },
   disputeHeader: {
     flexDirection: 'row',
@@ -223,15 +310,34 @@ const styles = StyleSheet.create({
   disputeTitle: {
     fontSize: 15,
     fontWeight: '700',
+    color: '#1A1D2E',
   },
   disputeReason: {
     fontSize: 13,
-    marginVertical: 8,
+    color: '#4A5068',
+    marginVertical: 10,
+    lineHeight: 18,
   },
   resolvedBox: {
-    backgroundColor: 'rgba(94, 230, 181, 0.1)',
-    padding: 8,
-    borderRadius: 6,
+    backgroundColor: '#E8FAF3',
+    padding: 10,
+    borderRadius: 10,
     marginTop: 6,
+    borderWidth: 1,
+    borderColor: '#C6F4E2',
+  },
+  pendingBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FEF8EA',
+    padding: 8,
+    borderRadius: 8,
+    marginTop: 6,
+  },
+  pendingText: {
+    color: '#D97706',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

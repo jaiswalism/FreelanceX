@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { defaultTheme } from '../theme';
+import { Icon } from './Icon';
 
 interface VerifiedReputationBadgeProps {
   score?: number;
@@ -8,22 +9,25 @@ interface VerifiedReputationBadgeProps {
 }
 
 export const VerifiedReputationBadge: React.FC<VerifiedReputationBadgeProps> = ({
-  score = 50,
+  score = 88,
   isVerified = true,
 }) => {
-  const { colors } = defaultTheme;
+  const { colors, radii } = defaultTheme;
 
   return (
-    <View style={[styles.container, { borderColor: colors.brand.primary }]}>
+    <View style={[styles.container, { borderColor: colors.border.subtle, borderRadius: radii.medium }]}>
       <View style={styles.badgeRow}>
-        <Text style={styles.icon}>🛡️</Text>
+        <View style={styles.iconCircle}>
+          <Icon name="sparkles" size={14} color={colors.brand.primary} />
+        </View>
         <Text style={[styles.scoreText, { color: colors.text.primary }]}>
-          Reputation: {score}/100
+          Score: {score}
         </Text>
         {isVerified && (
-          <View style={styles.verifiedTag}>
+          <View style={[styles.verifiedTag, { backgroundColor: colors.semantic.successBackground, borderRadius: radii.pill }]}>
+            <Icon name="shield" size={12} color={colors.semantic.success} style={{ marginRight: 4 }} />
             <Text style={[styles.verifiedText, { color: colors.semantic.success }]}>
-              ✓ On-Chain Verified
+              Verified Escrow
             </Text>
           </View>
         )}
@@ -34,34 +38,43 @@ export const VerifiedReputationBadge: React.FC<VerifiedReputationBadgeProps> = (
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#161616',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     alignSelf: 'flex-start',
+    shadowColor: '#5B4DFF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
   },
   badgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  icon: {
-    fontSize: 12,
-    marginRight: 4,
+  iconCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#F0EEFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 6,
   },
   scoreText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
   },
   verifiedTag: {
-    backgroundColor: 'rgba(94, 230, 181, 0.15)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    marginLeft: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    marginLeft: 10,
   },
   verifiedText: {
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '700',
   },
 });

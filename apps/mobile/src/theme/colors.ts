@@ -1,9 +1,65 @@
+export const friendlyPurpleColors = {
+  background: {
+    app: '#F6F7FB',
+    primary: '#FFFFFF',
+    secondary: '#FFFFFF',
+    elevated: '#FFFFFF',
+    hero: '#5B4DFF',
+    heroGradient: ['#5B4DFF', '#7064FF'],
+  },
+  surface: {
+    default: '#FFFFFF',
+    raised: '#FFFFFF',
+    pressed: '#F2F4FC',
+    selected: '#F0EEFF',
+  },
+  border: {
+    subtle: '#EEF0F8',
+    default: '#E3E7F4',
+    strong: '#CAD1E5',
+  },
+  brand: {
+    primary: '#5B4DFF',
+    strong: '#4A3CEB',
+    deep: '#3B2ED0',
+    soft: '#7E72FF',
+    tint: '#F0EEFF',
+    gradientStart: '#5B4DFF',
+    gradientEnd: '#7569FF',
+  },
+  semantic: {
+    success: '#10B981',
+    successBackground: '#E8FAF3',
+    warning: '#F59E0B',
+    warningBackground: '#FEF8EA',
+    danger: '#EF4444',
+    dangerBackground: '#FEECEC',
+    info: '#5B4DFF',
+    infoBackground: '#F0EEFF',
+  },
+  text: {
+    primary: '#1A1D2E',
+    secondary: '#697089',
+    tertiary: '#9CA3AF',
+    disabled: '#C4C9D9',
+    inverse: '#FFFFFF',
+  },
+  special: {
+    verified: '#10B981',
+    wallet: '#5B4DFF',
+    escrow: '#5B4DFF',
+    blockchain: '#697089',
+  },
+};
+
 export const darkColors = {
   background: {
     app: '#090909',
     primary: '#0B0B0B',
     secondary: '#101010',
     elevated: '#151515',
+    hero: '#151515',
+    heroGradient: ['#151515', '#202020'],
   },
   surface: {
     default: '#121212',
@@ -17,11 +73,13 @@ export const darkColors = {
     strong: '#383838',
   },
   brand: {
-    primary: '#FF6A00',
-    strong: '#FF7A00',
-    deep: '#D94F00',
-    soft: '#FF8A33',
-    tint: '#2A160B',
+    primary: '#5B4DFF',
+    strong: '#4A3CEB',
+    deep: '#3B2ED0',
+    soft: '#7E72FF',
+    tint: '#1C1938',
+    gradientStart: '#5B4DFF',
+    gradientEnd: '#7569FF',
   },
   semantic: {
     success: '#5EE6B5',
@@ -42,51 +100,11 @@ export const darkColors = {
   },
   special: {
     verified: '#5EE6B5',
-    wallet: '#FF6A00',
-    escrow: '#FF7A00',
+    wallet: '#5B4DFF',
+    escrow: '#5B4DFF',
     blockchain: '#A3A3A3',
   },
 };
 
-export const lightColors = {
-  background: {
-    app: '#F6F6F3',
-    primary: '#FAFAF8',
-    secondary: '#F0F0ED',
-    elevated: '#FFFFFF',
-  },
-  surface: {
-    default: '#FFFFFF',
-    raised: '#FFFFFF',
-    pressed: '#F1F1EE',
-    selected: '#FFF0E5',
-  },
-  border: {
-    subtle: '#E8E8E4',
-    default: '#DCDCD7',
-    strong: '#C8C8C2',
-  },
-  brand: {
-    primary: '#E95700',
-    strong: '#D94D00',
-    deep: '#B84000',
-  },
-  text: {
-    primary: '#111111',
-    secondary: '#5F5F5A',
-    tertiary: '#858580',
-    disabled: '#B0B0AA',
-  },
-  semantic: {
-    success: '#107E59',
-    successBackground: '#E6F8F0',
-    warning: '#B87808',
-    warningBackground: '#FFF7E6',
-    danger: '#D93838',
-    dangerBackground: '#FEECEC',
-    info: '#5F5F5A',
-    infoBackground: '#F0F0ED',
-  },
-};
-
-export type ThemeColors = typeof darkColors;
+export const lightColors = friendlyPurpleColors;
+export type ThemeColors = typeof friendlyPurpleColors;

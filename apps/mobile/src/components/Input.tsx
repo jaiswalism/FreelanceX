@@ -32,20 +32,20 @@ export const Input: React.FC<InputProps> = ({
             color: colors.text.secondary,
             fontSize: typography.scale.label.fontSize,
             fontWeight: '600',
-            marginBottom: 6,
+            marginBottom: 8,
           }}
         >
           {label}
         </Text>
       )}
       <TextInput
-        placeholderTextColor={colors.text.disabled}
+        placeholderTextColor={colors.text.tertiary}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         style={[
           {
-            backgroundColor: colors.surface.default,
-            borderWidth: 1,
+            backgroundColor: '#F8FAFD',
+            borderWidth: 1.5,
             borderColor: error
               ? colors.semantic.danger
               : isFocused
@@ -53,8 +53,8 @@ export const Input: React.FC<InputProps> = ({
               : colors.border.default,
             borderRadius: radii.default,
             color: colors.text.primary,
-            paddingHorizontal: 14,
-            paddingVertical: 12,
+            paddingHorizontal: 16,
+            paddingVertical: 14,
             fontSize: typography.scale.body.fontSize,
           },
           style,
