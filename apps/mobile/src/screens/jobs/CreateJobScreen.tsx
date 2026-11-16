@@ -27,7 +27,7 @@ export const CreateJobScreen: React.FC<CreateJobScreenProps> = ({
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [budgetUsdc, setBudgetUsdc] = useState('1500');
-  const [skillsInput, setSkillsInput] = useState('Solidity, Foundry, Base');
+  const [skillsInput, setSkillsInput] = useState('Solidity, Foundry, Sepolia');
   const [durationDays, setDurationDays] = useState('14');
   const [loading, setLoading] = useState(false);
 

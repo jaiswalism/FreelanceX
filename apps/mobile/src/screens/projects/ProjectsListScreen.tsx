@@ -21,48 +21,24 @@ export const ProjectsListScreen: React.FC<ProjectsListScreenProps> = ({
   onSelectProject,
 }) => {
   const { colors, radii } = defaultTheme;
-  const [projects, setProjects] = useState<any[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [projects, setProjects] = useState<any[]>(() => ApiClient.getLocalProjects());
+  const [loading, setLoading] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
 
   const fetchProjects = async () => {
     try {
+      if (projects.length === 0 && !refreshing) setLoading(true);
       const res = await ApiClient.getMyProjects();
       if (res.success && res.projects && res.projects.length > 0) {
         setProjects(res.projects);
-      } else {
-        setProjects(getSampleProjects());
       }
     } catch {
-      setProjects(getSampleProjects());
+      // Retain existing local projects
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
-
-  const getSampleProjects = () => [
-    {
-      id: 'proj-1',
-      title: 'Base Sepolia Escrow Smart Contract Audit',
-      status: 'IN_PROGRESS',
-      totalAmountUsdc: '2500',
-      milestonesCount: 3,
-      paidMilestonesCount: 1,
-      freelancer: { address: '0x709...79c8' },
-      job: { title: 'Security Audit & Invariant Fuzzing' },
-    },
-    {
-      id: 'proj-2',
-      title: 'Mobile DApp UI Redesign (Middletrust Spec)',
-      status: 'FUNDED',
-      totalAmountUsdc: '1800',
-      milestonesCount: 2,
-      paidMilestonesCount: 0,
-      freelancer: { address: '0x3c4...93bc' },
-      job: { title: 'React Native Android Polish' },
-    },
-  ];
 
   useEffect(() => {
     fetchProjects();

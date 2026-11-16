@@ -1,18 +1,22 @@
-import { createPublicClient, http, defineChain, formatUnits, parseUnits } from 'viem';
+import { createPublicClient, http, defineChain, formatUnits, parseUnits, formatEther } from 'viem';
 import { NETWORKS } from '@freelancerx/shared';
 
-export const baseSepoliaChain = defineChain({
-  id: NETWORKS.BASE_SEPOLIA.id,
-  name: NETWORKS.BASE_SEPOLIA.name,
-  nativeCurrency: NETWORKS.BASE_SEPOLIA.nativeCurrency,
-  rpcUrls: NETWORKS.BASE_SEPOLIA.rpcUrls,
-  blockExplorers: NETWORKS.BASE_SEPOLIA.blockExplorers,
+export const sepoliaChain = defineChain({
+  id: NETWORKS.SEPOLIA.id,
+  name: NETWORKS.SEPOLIA.name,
+  nativeCurrency: NETWORKS.SEPOLIA.nativeCurrency,
+  rpcUrls: NETWORKS.SEPOLIA.rpcUrls,
+  blockExplorers: NETWORKS.SEPOLIA.blockExplorers,
   testnet: true,
 });
 
 export const publicClient = createPublicClient({
-  chain: baseSepoliaChain,
-  transport: http(NETWORKS.BASE_SEPOLIA.rpcUrls.default.http[0]),
+  chain: sepoliaChain,
+  transport: http(NETWORKS.SEPOLIA.rpcUrls.default.http[0], {
+    timeout: 3500,
+    retryCount: 1,
+    retryDelay: 500,
+  }),
 });
 
 // Minimal ERC20 ABI for USDC queries
@@ -51,19 +55,48 @@ export const ERC20_ABI = [
 ] as const;
 
 export async function fetchChainStatus() {
+  const startTime = Date.now();
   try {
-    const blockNumber = await publicClient.getBlockNumber();
-    const chainId = await publicClient.getChainId();
+    const [blockNumber, chainId] = await Promise.all([
+      publicClient.getBlockNumber(),
+      publicClient.getChainId(),
+    ]);
+    const latencyMs = Date.now() - startTime;
     return {
       success: true,
       chainId,
       blockNumber: blockNumber.toString(),
-      networkName: baseSepoliaChain.name,
+      networkName: sepoliaChain.name,
+      latencyMs,
+    };
+  } catch (error) {
+    const latencyMs = Date.now() - startTime;
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch chain status',
+      latencyMs,
+      chainId: sepoliaChain.id,
+      blockNumber: 'Active',
+      networkName: sepoliaChain.name,
+    };
+  }
+}
+
+export async function fetchEthBalance(address: `0x${string}`) {
+  try {
+    const balanceWei = await publicClient.getBalance({ address });
+    const formatted = parseFloat(formatEther(balanceWei)).toFixed(4);
+    return {
+      success: true,
+      rawBalance: balanceWei.toString(),
+      formatted,
     };
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch chain status',
+      error: error instanceof Error ? error.message : 'Failed to fetch ETH balance',
+      rawBalance: '0',
+      formatted: '0.0000',
     };
   }
 }
@@ -71,7 +104,7 @@ export async function fetchChainStatus() {
 export async function fetchUsdcBalance(address: `0x${string}`) {
   try {
     const balance = await publicClient.readContract({
-      address: NETWORKS.BASE_SEPOLIA.contracts.usdc.address,
+      address: NETWORKS.SEPOLIA.contracts.usdc.address,
       abi: ERC20_ABI,
       functionName: 'balanceOf',
       args: [address],
@@ -79,7 +112,10 @@ export async function fetchUsdcBalance(address: `0x${string}`) {
     return {
       success: true,
       rawBalance: balance.toString(),
-      formatted: formatUnits(balance, 6),
+      formatted: parseFloat(formatUnits(balance, 6)).toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }),
     };
   } catch (error) {
     return {
@@ -91,4 +127,4 @@ export async function fetchUsdcBalance(address: `0x${string}`) {
   }
 }
 
-export { formatUnits, parseUnits };
+export { formatUnits, parseUnits, formatEther };

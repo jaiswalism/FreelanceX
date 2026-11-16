@@ -8,78 +8,53 @@ import {
   StatusBar,
   ActivityIndicator,
   StyleSheet,
+  RefreshControl,
 } from 'react-native';
 import { defaultTheme } from '../../theme';
 import { Card, Input, Button, Icon } from '../../components';
 import { ApiClient } from '../../services/api/apiClient';
 
 interface JobsFeedScreenProps {
-  onSelectJob: (jobId: string) => void;
+  onSelectJob: (job: any) => void;
   onCreateJobPress: () => void;
   walletAddress?: string;
+  isClient?: boolean;
 }
 
 export const JobsFeedScreen: React.FC<JobsFeedScreenProps> = ({
   onSelectJob,
   onCreateJobPress,
+  isClient = true,
 }) => {
   const { colors, spacing, radii } = defaultTheme;
 
-  const [jobs, setJobs] = useState<any[]>([]);
+  const [jobs, setJobs] = useState<any[]>(() => ApiClient.getLocalJobs());
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchJobs = async () => {
     try {
-      setLoading(true);
-      const res = await ApiClient.listJobs({ query: searchQuery || undefined });
+      if (jobs.length === 0 && !refreshing) setLoading(true);
+      const res = await ApiClient.listJobs({ query: searchQuery.trim() || undefined });
       if (res.jobs && res.jobs.length > 0) {
         setJobs(res.jobs);
-      } else {
-        setJobs(getSampleJobs());
       }
     } catch {
-      setJobs(getSampleJobs());
+      if (jobs.length === 0) {
+        setJobs(ApiClient.getLocalJobs());
+      }
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
-  const getSampleJobs = () => [
-    {
-      id: 'job-1',
-      title: 'Base Sepolia Escrow Smart Contract Audit',
-      description: 'Need experienced Solidity security researcher to audit milestone escrow contracts on Base.',
-      budgetUsdc: '2500',
-      skills: ['Solidity', 'Foundry', 'Security', 'Base'],
-      proposalsCount: 3,
-      createdAt: new Date().toISOString(),
-      client: { address: '0x324...89ab' },
-    },
-    {
-      id: 'job-2',
-      title: 'React Native Android Mobile Escrow UI',
-      description: 'Build sleek, friendly mobile interfaces for wallet interaction, dispute arbitration & deliverables.',
-      budgetUsdc: '1800',
-      skills: ['React Native', 'TypeScript', 'Viem', 'Mobile'],
-      proposalsCount: 5,
-      createdAt: new Date().toISOString(),
-      client: { address: '0x124...43fa' },
-    },
-    {
-      id: 'job-3',
-      title: 'Full-Stack Blockchain Indexer & Notification Worker',
-      description: 'Integrate real-time Viem event subscriber with PostgreSQL event reconciliation and push notifications.',
-      budgetUsdc: '3200',
-      skills: ['Node.js', 'PostgreSQL', 'Viem', 'Prisma'],
-      proposalsCount: 2,
-      createdAt: new Date().toISOString(),
-      client: { address: '0x709...79c8' },
-    },
-  ];
-
   useEffect(() => {
-    fetchJobs();
+    const timer = setTimeout(() => {
+      fetchJobs();
+    }, 250);
+    return () => clearTimeout(timer);
   }, [searchQuery]);
 
   const renderHeroBanner = () => (
@@ -90,32 +65,34 @@ export const JobsFeedScreen: React.FC<JobsFeedScreenProps> = ({
         </View>
         <View style={styles.networkPill}>
           <Text style={styles.networkDot}>●</Text>
-          <Text style={styles.networkText}>Base Sepolia</Text>
+          <Text style={styles.networkText}>Ethereum Sepolia</Text>
         </View>
       </View>
 
       <Text style={styles.heroTitle}>Decentralized Escrow</Text>
-      <Text style={styles.heroSubtitle}>Pay, Secure & Build Verified Trust on Base</Text>
+      <Text style={styles.heroSubtitle}>Pay, Secure & Build Verified Trust on Sepolia</Text>
 
       <View style={styles.heroStatsRow}>
         <View style={styles.heroStatItem}>
-          <Text style={styles.heroStatLabel}>Protected Escrow</Text>
-          <Text style={styles.heroStatValue}>$3,550.24 USDC</Text>
+          <Text style={styles.heroStatLabel}>Active Verified Gigs</Text>
+          <Text style={styles.heroStatValue}>{jobs.length} Open</Text>
         </View>
-        <TouchableOpacity
-          activeOpacity={0.85}
-          onPress={onCreateJobPress}
-          style={styles.heroActionButton}
-        >
-          <Icon name="plus" size={16} color={colors.brand.primary} />
-          <Text style={[styles.heroActionText, { color: colors.brand.primary }]}>Post Job</Text>
-        </TouchableOpacity>
+        {isClient && (
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={onCreateJobPress}
+            style={styles.heroActionButton}
+          >
+            <Icon name="plus" size={16} color={colors.brand.primary} />
+            <Text style={[styles.heroActionText, { color: colors.brand.primary }]}>Post Gig</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
 
   const renderJobItem = ({ item }: { item: any }) => (
-    <TouchableOpacity activeOpacity={0.85} onPress={() => onSelectJob(item.id)}>
+    <TouchableOpacity activeOpacity={0.85} onPress={() => onSelectJob(item)}>
       <Card style={styles.jobCard}>
         <View style={styles.jobHeader}>
           <Text style={[styles.jobTitle, { color: colors.text.primary }]}>
@@ -205,6 +182,16 @@ export const JobsFeedScreen: React.FC<JobsFeedScreenProps> = ({
             renderItem={renderJobItem}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 60 }}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={() => {
+                  setRefreshing(true);
+                  fetchJobs();
+                }}
+                tintColor={colors.brand.primary}
+              />
+            }
             ListEmptyComponent={
               <Card style={{ alignItems: 'center', padding: 28, marginTop: 16 }}>
                 <Icon name="briefcase" size={36} color={colors.brand.primary} />

@@ -131,4 +131,5 @@
 - [x] Configured Base Sepolia (Chain ID 84532) and Base Mainnet (Chain ID 8453) chain constants in [`index.ts`](file:///d:/Projects/dapp/packages/shared/src/constants/index.ts)
 - [x] Prepared Foundry deployment script [`DeployEscrow.s.sol`](file:///d:/Projects/dapp/packages/contracts/script/DeployEscrow.s.sol) with multi-arbitrator initialization
 - [x] Hardened Android Gradle build toolchain with automatic Temurin JDK 17 resolution in `gradlew.bat` and `gradle.properties`
+- [x] Built standalone signed release APK (`FreelancerX-release.apk`, 48.66 MB) with bundled Hermes bytecode and native dependencies
 

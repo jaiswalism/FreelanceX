@@ -17,6 +17,7 @@
     "backend:build": "npm run build --workspace=@freelancerx/backend",
     "mobile:android": "npm run android --workspace=@freelancerx/mobile",
     "mobile:start": "npm run start --workspace=@freelancerx/mobile",
+    "mobile:apk": "npm run build:apk --workspace=@freelancerx/mobile",
     "postinstall": "patch-package"
   },
   "devDependencies": {

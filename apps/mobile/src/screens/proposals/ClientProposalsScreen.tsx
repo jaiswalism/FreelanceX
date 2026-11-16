@@ -54,7 +54,7 @@ export const ClientProposalsScreen: React.FC<ClientProposalsScreenProps> = ({
               reputationScore: 94,
             },
           },
-          coverLetter: 'I have built and audited 10+ milestone escrow protocols on Base Sepolia. Can complete deliverables cleanly in 14 days with full Foundry invariants.',
+          coverLetter: 'I have built and audited 10+ milestone escrow protocols on Ethereum Sepolia. Can complete deliverables cleanly in 14 days with full Foundry invariants.',
           proposedPriceUsdc: '2500',
           proposedDurationDays: 14,
           status: 'PENDING',

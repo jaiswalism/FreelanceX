@@ -1,4 +1,31 @@
 export const NETWORKS = {
+  SEPOLIA: {
+    id: 11155111,
+    name: 'Ethereum Sepolia',
+    nativeCurrency: {
+      name: 'Sepolia Ether',
+      symbol: 'ETH',
+      decimals: 18,
+    },
+    rpcUrls: {
+      default: { http: ['https://rpc.sepolia.org', 'https://ethereum-sepolia-rpc.publicnode.com'] },
+      public: { http: ['https://rpc.sepolia.org', 'https://ethereum-sepolia-rpc.publicnode.com'] },
+    },
+    blockExplorers: {
+      default: { name: 'Etherscan', url: 'https://sepolia.etherscan.io' },
+    },
+    contracts: {
+      usdc: {
+        address: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238' as `0x${string}`,
+        decimals: 6,
+        symbol: 'USDC',
+      },
+      escrow: {
+        address: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+      },
+    },
+    testnet: true,
+  },
   BASE_SEPOLIA: {
     id: 84532,
     name: 'Base Sepolia',

@@ -20,16 +20,6 @@ app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
 
-// Route groups
-app.use('/auth', authRoutes);
-app.use('/users', userRoutes);
-app.use('/jobs', jobsRoutes);
-app.use('/', proposalsRoutes);
-app.use('/', projectsRoutes);
-app.use('/', reputationRoutes);
-app.use('/', messagesRoutes);
-app.use('/', disputesRoutes);
-
 // Health check endpoint
 app.get('/health', (_req: Request, res: Response) => {
   res.json({
@@ -41,6 +31,16 @@ app.get('/health', (_req: Request, res: Response) => {
     },
   });
 });
+
+// Route groups
+app.use('/auth', authRoutes);
+app.use('/users', userRoutes);
+app.use('/jobs', jobsRoutes);
+app.use('/', proposalsRoutes);
+app.use('/', projectsRoutes);
+app.use('/', reputationRoutes);
+app.use('/', messagesRoutes);
+app.use('/', disputesRoutes);
 
 // Start Server
 if (process.env.NODE_ENV !== 'test') {

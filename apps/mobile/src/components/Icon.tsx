@@ -13,6 +13,8 @@ export type IconName =
   | 'search'
   | 'chevronRight'
   | 'chevronLeft'
+  | 'chevronDown'
+  | 'chevronUp'
   | 'copy'
   | 'externalLink'
   | 'sparkles'
@@ -136,6 +138,20 @@ export const Icon: React.FC<IconProps> = ({
       return (
         <Svg {...commonProps}>
           <Path d="m15 18-6-6 6-6" />
+        </Svg>
+      );
+
+    case 'chevronDown':
+      return (
+        <Svg {...commonProps}>
+          <Path d="m6 9 6 6 6-6" />
+        </Svg>
+      );
+
+    case 'chevronUp':
+      return (
+        <Svg {...commonProps}>
+          <Path d="m18 15-6-6-6 6" />
         </Svg>
       );
 
