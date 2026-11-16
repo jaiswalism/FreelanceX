@@ -2,7 +2,7 @@ import { HexAddress, ProposedMilestone } from '@freelancerx/shared';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { WalletService } from '../wallet/walletService';
 
-const DEFAULT_API_BASE_URL = 'http://10.0.2.2:4000';
+const DEFAULT_API_BASE_URL = 'https://freelancex-rzv0.onrender.com';
 const STORAGE_KEY_TOKEN = '@freelancerx:auth_token';
 const REQUEST_TIMEOUT_MS = 1200;
 
