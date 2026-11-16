@@ -27,7 +27,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onGetStarted
         <View style={styles.topHeader}>
           <View style={styles.networkBadge}>
             <Text style={styles.networkDot}>●</Text>
-            <Text style={styles.networkText}>Ethereum Sepolia Testnet</Text>
+            <Text style={styles.networkText}>Decentralized Escrow</Text>
           </View>
         </View>
 
@@ -81,7 +81,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onGetStarted
                 Verifiable Reputation
               </Text>
               <Text style={[styles.featureDesc, { color: colors.text.secondary }]}>
-                Every delivered project and rating is permanently recorded on Ethereum Sepolia.
+                Every delivered project and rating is permanently recorded on-chain.
               </Text>
             </View>
           </View>

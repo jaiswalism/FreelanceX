@@ -16,19 +16,25 @@ import { ApiClient } from '../../services/api/apiClient';
 interface CreateJobScreenProps {
   onBack: () => void;
   onJobCreated: (job: any) => void;
+  jobToEdit?: any;
 }
 
 export const CreateJobScreen: React.FC<CreateJobScreenProps> = ({
   onBack,
   onJobCreated,
+  jobToEdit,
 }) => {
   const { colors, spacing } = defaultTheme;
 
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [budgetUsdc, setBudgetUsdc] = useState('1500');
-  const [skillsInput, setSkillsInput] = useState('Solidity, Foundry, Sepolia');
-  const [durationDays, setDurationDays] = useState('14');
+  const [title, setTitle] = useState(jobToEdit?.title || '');
+  const [description, setDescription] = useState(jobToEdit?.description || '');
+  const [budgetUsdc, setBudgetUsdc] = useState(jobToEdit?.budgetUsdc || '1500');
+  const [skillsInput, setSkillsInput] = useState(
+    jobToEdit?.skills?.join(', ') || 'Solidity, Smart Contracts, Security'
+  );
+  const [durationDays, setDurationDays] = useState(
+    (jobToEdit?.estimatedDurationDays || 14).toString()
+  );
   const [loading, setLoading] = useState(false);
 
   const budgetPresets = ['500', '1000', '2500', '5000'];
@@ -46,23 +52,35 @@ export const CreateJobScreen: React.FC<CreateJobScreenProps> = ({
 
     const skills = skillsInput
       .split(',')
-      .map((s) => s.trim())
+      .map((s: string) => s.trim())
       .filter(Boolean);
 
     try {
       setLoading(true);
-      const res = await ApiClient.createJob({
-        title,
-        description,
-        budgetUsdc,
-        skills: skills.length > 0 ? skills : ['Smart Contracts', 'Solidity'],
-        estimatedDurationDays: parseInt(durationDays, 10) || 14,
-      });
 
-      Alert.alert('Job Published! 🎉', 'Your job is now live on the marketplace. Verified freelancers can submit proposals.');
-      onJobCreated(res.job);
+      if (jobToEdit) {
+        const res = await ApiClient.updateJob(jobToEdit.id, {
+          title,
+          description,
+          budgetUsdc,
+          skills: skills.length > 0 ? skills : ['Smart Contracts', 'Solidity'],
+          estimatedDurationDays: parseInt(durationDays, 10) || 14,
+        });
+        Alert.alert('Gig Updated! 🎉', 'Your gig details have been successfully updated.');
+        onJobCreated(res.job || { ...jobToEdit, title, description, budgetUsdc, skills });
+      } else {
+        const res = await ApiClient.createJob({
+          title,
+          description,
+          budgetUsdc,
+          skills: skills.length > 0 ? skills : ['Smart Contracts', 'Solidity'],
+          estimatedDurationDays: parseInt(durationDays, 10) || 14,
+        });
+        Alert.alert('Job Published! 🎉', 'Your job is now live on the marketplace. Verified freelancers can submit proposals.');
+        onJobCreated(res.job);
+      }
     } catch (err) {
-      Alert.alert('Job Posting Failed', err instanceof Error ? err.message : 'Unknown error');
+      Alert.alert('Operation Failed', err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
     }
@@ -72,7 +90,7 @@ export const CreateJobScreen: React.FC<CreateJobScreenProps> = ({
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background.app }}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       <Header
-        title="Post a New Gig"
+        title={jobToEdit ? 'Edit Gig' : 'Post a New Gig'}
         subtitle="Set deliverables & smart contract escrow"
         onBack={onBack}
       />
@@ -210,7 +228,7 @@ export const CreateJobScreen: React.FC<CreateJobScreenProps> = ({
             style={{ flex: 1 }}
           />
           <Button
-            title="Publish Gig"
+            title={jobToEdit ? 'Save Changes' : 'Publish Gig'}
             onPress={handleSubmit}
             loading={loading}
             style={{ flex: 2 }}

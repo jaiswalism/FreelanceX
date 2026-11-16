@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, ViewStyle, TouchableOpacity } from 'react-native';
 import { defaultTheme } from '../theme';
-import { Badge } from './Badge';
 import { Icon } from './Icon';
 
 interface HeaderProps {
@@ -17,7 +16,6 @@ export const Header: React.FC<HeaderProps> = ({
   title,
   subtitle,
   walletAddress,
-  networkName = 'Ethereum Sepolia',
   onBack,
   style,
 }) => {
@@ -99,9 +97,8 @@ export const Header: React.FC<HeaderProps> = ({
           </View>
         </View>
 
-        <View style={{ alignItems: 'flex-end', gap: 4 }}>
-          <Badge label={networkName} variant="brand" />
-          {walletAddress && (
+        {walletAddress && (
+          <View style={{ alignItems: 'flex-end' }}>
             <Text
               style={{
                 color: colors.special.verified,
@@ -112,8 +109,8 @@ export const Header: React.FC<HeaderProps> = ({
             >
               {formatAddress(walletAddress)}
             </Text>
-          )}
-        </View>
+          </View>
+        )}
       </View>
     </View>
   );

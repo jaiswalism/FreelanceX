@@ -78,7 +78,7 @@ export const ConnectWalletScreen: React.FC<ConnectWalletScreenProps> = ({
             Connect your Web3 Wallet
           </Text>
           <Text style={[styles.introSubtitle, { color: colors.text.secondary }]}>
-            Authorize securely using your installed wallet. FreelancerX verifies your identity on Ethereum Sepolia with zero custody.
+            Authorize securely using your installed wallet. FreelancerX verifies your identity with zero custody.
           </Text>
         </View>
 

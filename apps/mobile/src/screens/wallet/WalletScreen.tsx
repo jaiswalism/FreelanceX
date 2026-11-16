@@ -109,13 +109,13 @@ export const WalletScreen: React.FC<WalletScreenProps> = ({
               Web3 Escrow Wallet
             </Text>
             <Text style={[styles.screenSubtitle, { color: colors.text.secondary }]}>
-              Ethereum Sepolia Testnet
+              Verified Escrow & Payments
             </Text>
           </View>
           <View style={styles.networkBadge}>
             <Text style={styles.networkDot}>●</Text>
             <Text style={styles.networkName}>
-              {wallet.latencyMs ? `${wallet.latencyMs}ms` : 'Sepolia Live'}
+              {wallet.latencyMs ? `${wallet.latencyMs}ms` : 'Connected'}
             </Text>
           </View>
         </View>
@@ -149,7 +149,7 @@ export const WalletScreen: React.FC<WalletScreenProps> = ({
 
           <View style={styles.secondaryBalanceRow}>
             <Text style={styles.ethBalanceText}>
-              Gas: {wallet.ethBalance || '0.0000'} SepoliaETH
+              Gas: {wallet.ethBalance || '0.0000'} ETH
             </Text>
             {wallet.blockNumber && (
               <Text style={styles.blockText}>Block #{wallet.blockNumber}</Text>

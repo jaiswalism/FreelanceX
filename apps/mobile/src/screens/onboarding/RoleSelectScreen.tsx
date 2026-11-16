@@ -97,7 +97,7 @@ export const RoleSelectScreen: React.FC<RoleSelectScreenProps> = ({
               I want to Hire (Client)
             </Text>
             <Text style={[styles.roleDescription, { color: colors.text.secondary }]}>
-              Post gigs, fund smart contract escrows with USDC on Sepolia, and approve completed deliverables.
+              Post gigs, fund smart contract escrows with USDC, and approve completed deliverables.
             </Text>
 
             <View style={styles.bulletList}>

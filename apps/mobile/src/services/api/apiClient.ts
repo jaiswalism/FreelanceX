@@ -432,6 +432,45 @@ export class ApiClient {
     }
   }
 
+  public static async updateJob(
+    jobId: string,
+    data: Partial<{
+      title: string;
+      description: string;
+      skills: string[];
+      budgetUsdc: string;
+      estimatedDurationDays?: number;
+    }>
+  ): Promise<{ success: boolean; job: any }> {
+    try {
+      return await this.request(`/jobs/${jobId}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    } catch {
+      const found = localStore.jobs.find((j) => j.id === jobId);
+      if (found) {
+        Object.assign(found, data);
+      }
+      return { success: true, job: found };
+    }
+  }
+
+  public static async getMyProposals(): Promise<{ success: boolean; proposals: any[] }> {
+    try {
+      return await this.request('/proposals/me');
+    } catch {
+      const activeAddress = WalletService.getState().address?.toLowerCase();
+      const matched = activeAddress
+        ? localStore.proposals.filter((p) => p.freelancer?.address?.toLowerCase() === activeAddress)
+        : localStore.proposals;
+      return {
+        success: true,
+        proposals: matched.length > 0 ? matched : localStore.proposals,
+      };
+    }
+  }
+
   public static async getProposalsByJob(jobId: string): Promise<{ success: boolean; proposals: any[] }> {
     try {
       return await this.request(`/jobs/${jobId}/proposals`);
