@@ -46,7 +46,7 @@ app.use('/', disputesRoutes);
 if (process.env.NODE_ENV !== 'test') {
   app.listen(config.port, () => {
     console.log(`FreelancerX backend server running on port ${config.port} [${config.nodeEnv}]`);
-    console.log(`Target Network: Base Sepolia (Chain ID: ${config.chainId})`);
+    console.log(`Target Network: Ethereum Sepolia (Chain ID: ${config.chainId})`);
 
     // Start Indexer
     const indexer = new BlockchainIndexer();
