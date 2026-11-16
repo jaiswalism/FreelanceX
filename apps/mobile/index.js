@@ -1,3 +1,6 @@
+import '@walletconnect/react-native-compat';
+import 'react-native-get-random-values';
+
 // Polyfill crypto.getRandomValues for viem in React Native environment
 if (typeof global.crypto !== 'object') {
   global.crypto = {};

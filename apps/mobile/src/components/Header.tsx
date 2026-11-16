@@ -17,7 +17,7 @@ export const Header: React.FC<HeaderProps> = ({
   title,
   subtitle,
   walletAddress,
-  networkName = 'Base Sepolia',
+  networkName = 'Ethereum Sepolia',
   onBack,
   style,
 }) => {

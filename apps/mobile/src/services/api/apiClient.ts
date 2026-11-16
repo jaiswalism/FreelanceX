@@ -81,7 +81,7 @@ const localStore: {
   projects: [
     {
       id: 'proj-1',
-      title: 'Base Sepolia Escrow Smart Contract Audit',
+      title: 'Ethereum Sepolia Escrow Smart Contract Audit',
       status: 'IN_PROGRESS',
       totalAmountUsdc: '2500',
       milestonesCount: 2,
@@ -462,7 +462,7 @@ export class ApiClient {
         paidMilestonesCount: 0,
         client: { address: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266' },
         freelancer: prop?.freelancer || { address: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8' },
-        job: { title: 'Base Sepolia Milestone Escrow' },
+        job: { title: 'Ethereum Sepolia Milestone Escrow' },
         onChainProjectId: '0xmock_onchain_id',
         fundedTxHash: '',
         milestones: (prop?.milestonePlan || []).map((m: any, idx: number) => ({
@@ -609,7 +609,7 @@ export class ApiClient {
             id: 'msg-1',
             projectId,
             sender: { address: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266' },
-            content: 'Hello! Excited to initiate this verified milestone contract on Base Sepolia.',
+            content: 'Hello! Excited to initiate this verified milestone contract on Ethereum Sepolia.',
             createdAt: new Date(Date.now() - 3600000).toISOString(),
           },
           {

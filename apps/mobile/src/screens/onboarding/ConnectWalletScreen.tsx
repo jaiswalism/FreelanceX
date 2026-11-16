@@ -6,118 +6,50 @@ import {
   SafeAreaView,
   StatusBar,
   TouchableOpacity,
-  TextInput,
   Alert,
-  Linking,
+  ActivityIndicator,
   ScrollView,
 } from 'react-native';
 import { defaultTheme } from '../../theme';
 import { Icon } from '../../components/Icon';
-import { Button } from '../../components/Button';
 import { WalletService } from '../../services/wallet/walletService';
-import { HexAddress } from '@freelancerx/shared';
+import {
+  WalletConnectService,
+  SUPPORTED_WALLETS,
+  WalletAppConfig,
+} from '../../services/wallet/walletConnectService';
 
 interface ConnectWalletScreenProps {
   onBack: () => void;
   onConnected: () => void;
 }
 
-interface WalletOption {
-  id: string;
-  name: string;
-  icon: string;
-  tag: string;
-  scheme: string;
-  playStore: string;
-}
-
-const WALLET_OPTIONS: WalletOption[] = [
-  {
-    id: 'metamask',
-    name: 'MetaMask',
-    icon: '🦊',
-    tag: 'Recommended',
-    scheme: 'metamask://',
-    playStore: 'https://play.google.com/store/apps/details?id=io.metamask',
-  },
-  {
-    id: 'trust',
-    name: 'Trust Wallet',
-    icon: '🛡️',
-    tag: 'Popular',
-    scheme: 'trust://',
-    playStore: 'https://play.google.com/store/apps/details?id=com.wallet.crypto.trustapp',
-  },
-  {
-    id: 'coinbase',
-    name: 'Coinbase Wallet',
-    icon: '🔵',
-    tag: 'Web3',
-    scheme: 'cbwallet://',
-    playStore: 'https://play.google.com/store/apps/details?id=org.toshi',
-  },
-  {
-    id: 'rainbow',
-    name: 'Rainbow',
-    icon: '🌈',
-    tag: 'Ethereum',
-    scheme: 'rainbow://',
-    playStore: 'https://play.google.com/store/apps/details?id=me.rainbow',
-  },
-];
-
 export const ConnectWalletScreen: React.FC<ConnectWalletScreenProps> = ({
   onBack,
   onConnected,
 }) => {
   const { colors, radii } = defaultTheme;
-  const [selectedWallet, setSelectedWallet] = useState<WalletOption>(WALLET_OPTIONS[0] as WalletOption);
-  const [addressInput, setAddressInput] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(false);
+  const [connectingWallet, setConnectingWallet] = useState<WalletAppConfig | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleOpenWalletApp = async (wallet: WalletOption) => {
-    setSelectedWallet(wallet);
+  const handleConnectWallet = async (wallet: WalletAppConfig) => {
     try {
-      const canOpen = await Linking.canOpenURL(wallet.scheme).catch(() => false);
-      if (canOpen) {
-        await Linking.openURL(wallet.scheme);
-      } else {
-        Alert.alert(
-          `${wallet.name} App`,
-          `Would you like to open the Play Store to install ${wallet.name}, or connect by entering your public address?`,
-          [
-            { text: 'Enter Address', style: 'default' },
-            { text: 'Get App', onPress: () => Linking.openURL(wallet.playStore) },
-            { text: 'Cancel', style: 'cancel' },
-          ]
-        );
+      setErrorMessage(null);
+      setConnectingWallet(wallet);
+
+      const result = await WalletConnectService.connect(wallet);
+
+      if (result && result.address) {
+        await WalletService.connectWallet(result.address, result.providerName);
+        onConnected();
       }
-    } catch {
-      // Keep on screen for manual entry
-    }
-  };
-
-  const handleConnectWithAddress = async () => {
-    const cleanAddress = addressInput.trim();
-    if (!cleanAddress.startsWith('0x') || cleanAddress.length !== 42) {
-      Alert.alert(
-        'Invalid Ethereum Address',
-        'Please enter a valid 42-character Ethereum Sepolia public address (starting with 0x...).\n\nYou can copy your public address directly from MetaMask or Trust Wallet.'
-      );
-      return;
-    }
-
-    try {
-      setLoading(true);
-      await WalletService.connectWallet(
-        cleanAddress as HexAddress,
-        selectedWallet.name
-      );
-      onConnected();
-    } catch (err) {
-      Alert.alert('Connection Failed', err instanceof Error ? err.message : 'Could not connect wallet');
+    } catch (err: any) {
+      console.warn('Wallet connection failed:', err);
+      const msg = err?.message || 'Connection request was cancelled or timed out.';
+      setErrorMessage(msg);
+      Alert.alert('Connection Failed', msg);
     } finally {
-      setLoading(false);
+      setConnectingWallet(null);
     }
   };
 
@@ -128,32 +60,58 @@ export const ConnectWalletScreen: React.FC<ConnectWalletScreenProps> = ({
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Top Header */}
         <View style={styles.topBar}>
-          <TouchableOpacity activeOpacity={0.7} onPress={onBack} style={styles.backButton}>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={onBack}
+            style={styles.backButton}
+            disabled={!!connectingWallet}
+          >
             <Icon name="chevronLeft" size={20} color={colors.text.primary} />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: colors.text.primary }]}>Connect Wallet</Text>
           <View style={{ width: 40 }} />
         </View>
 
-        {/* Instructions */}
+        {/* Intro Banner */}
         <View style={styles.introWrap}>
           <Text style={[styles.introTitle, { color: colors.text.primary }]}>
-            Select your Web3 Wallet
+            Connect your Web3 Wallet
           </Text>
           <Text style={[styles.introSubtitle, { color: colors.text.secondary }]}>
-            Connect your existing Ethereum account to sign in, bid on projects, and manage smart escrow funds.
+            Authorize securely using your installed wallet. FreelancerX verifies your identity on Ethereum Sepolia with zero custody.
           </Text>
         </View>
 
-        {/* Wallets Grid */}
+        {/* Active Connecting State */}
+        {connectingWallet && (
+          <View style={[styles.connectingCard, { borderRadius: radii.card }]}>
+            <ActivityIndicator size="large" color={colors.brand.primary} />
+            <Text style={[styles.connectingTitle, { color: colors.text.primary }]}>
+              Waiting for {connectingWallet.name}...
+            </Text>
+            <Text style={styles.connectingSubtitle}>
+              Please check your {connectingWallet.name} app and tap "Connect" to authorize.
+            </Text>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => setConnectingWallet(null)}
+              style={styles.cancelBtn}
+            >
+              <Text style={styles.cancelBtnText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Wallet Options List */}
         <View style={styles.walletList}>
-          {WALLET_OPTIONS.map((wallet) => {
-            const isSelected = selectedWallet.id === wallet.id;
+          {SUPPORTED_WALLETS.map((wallet) => {
+            const isSelected = connectingWallet?.id === wallet.id;
             return (
               <TouchableOpacity
                 key={wallet.id}
                 activeOpacity={0.8}
-                onPress={() => handleOpenWalletApp(wallet)}
+                disabled={!!connectingWallet}
+                onPress={() => handleConnectWallet(wallet)}
                 style={[
                   styles.walletCard,
                   { borderRadius: radii.card },
@@ -171,63 +129,40 @@ export const ConnectWalletScreen: React.FC<ConnectWalletScreenProps> = ({
                         {wallet.name}
                       </Text>
                       {wallet.tag && (
-                        <View style={[styles.tagPill, isSelected && { backgroundColor: '#5B4DFF' }]}>
-                          <Text style={[styles.tagText, isSelected && { color: '#FFFFFF' }]}>
-                            {wallet.tag}
-                          </Text>
+                        <View style={styles.tagPill}>
+                          <Text style={styles.tagText}>{wallet.tag}</Text>
                         </View>
                       )}
                     </View>
-                    <Text style={styles.walletDesc}>Tap to launch or link</Text>
+                    <Text style={styles.walletDesc}>Tap to launch and connect</Text>
                   </View>
                 </View>
 
-                <Icon
-                  name={isSelected ? 'check' : 'chevronRight'}
-                  size={18}
-                  color={isSelected ? colors.brand.primary : '#9CA3AF'}
-                />
+                {isSelected ? (
+                  <ActivityIndicator size="small" color={colors.brand.primary} />
+                ) : (
+                  <Icon name="chevronRight" size={18} color="#9CA3AF" />
+                )}
               </TouchableOpacity>
             );
           })}
         </View>
 
-        {/* Manual Public Address Input Card */}
-        <View style={[styles.addressInputCard, { borderRadius: radii.card }]}>
-          <View style={styles.addressInputHeader}>
-            <Text style={[styles.addressInputTitle, { color: colors.text.primary }]}>
-              {selectedWallet.name} Public Address
-            </Text>
-            <Text style={styles.addressNotice}>Public (0x...)</Text>
+        {errorMessage && (
+          <View style={styles.errorBanner}>
+            <Icon name="alertTriangle" size={16} color="#EF4444" />
+            <Text style={styles.errorText}>{errorMessage}</Text>
           </View>
-          <Text style={styles.addressHint}>
-            Copy your public address from {selectedWallet.name} and paste it below:
-          </Text>
+        )}
 
-          <TextInput
-            style={styles.textInput}
-            placeholder="0x..."
-            placeholderTextColor="#9CA3AF"
-            value={addressInput}
-            onChangeText={setAddressInput}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-
-          <Button
-            title={`Connect with ${selectedWallet.name}`}
-            onPress={handleConnectWithAddress}
-            loading={loading}
-            disabled={!addressInput.trim()}
-            style={{ marginTop: 12 }}
-          />
-        </View>
-
-        {/* Security Assurance */}
-        <View style={styles.securityWrap}>
-          <Icon name="shield" size={16} color="#10B981" />
-          <Text style={styles.securityText}>
-            Zero custody. FreelancerX never asks for private keys or seed phrases.
+        {/* Security Box */}
+        <View style={[styles.securityBox, { borderRadius: radii.card }]}>
+          <View style={styles.securityHeader}>
+            <Icon name="shield" size={18} color="#10B981" />
+            <Text style={styles.securityTitle}>100% Cryptographic Authorization</Text>
+          </View>
+          <Text style={styles.securityDesc}>
+            No private keys. No manual address typing. Authentication is cryptographically confirmed through your wallet app via WalletConnect.
           </Text>
         </View>
       </ScrollView>
@@ -265,21 +200,59 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   introWrap: {
-    marginBottom: 20,
+    marginBottom: 24,
   },
   introTitle: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '800',
-    letterSpacing: -0.3,
+    letterSpacing: -0.4,
     marginBottom: 6,
   },
   introSubtitle: {
     fontSize: 14,
     lineHeight: 20,
   },
-  walletList: {
-    gap: 10,
+  connectingCard: {
+    backgroundColor: '#FFFFFF',
+    padding: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#5B4DFF',
     marginBottom: 20,
+    shadowColor: '#5B4DFF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  connectingTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    marginTop: 14,
+    marginBottom: 4,
+  },
+  connectingSubtitle: {
+    fontSize: 13,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  cancelBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#F3F4F6',
+  },
+  cancelBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#4B5563',
+  },
+  walletList: {
+    gap: 12,
+    marginBottom: 24,
   },
   walletCard: {
     flexDirection: 'row',
@@ -328,61 +301,42 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     marginTop: 2,
   },
-  addressInputCard: {
-    backgroundColor: '#FFFFFF',
-    padding: 18,
-    borderWidth: 1,
-    borderColor: '#EEF0F8',
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  addressInputHeader: {
+  errorBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  addressInputTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  addressNotice: {
-    fontSize: 11,
-    color: '#10B981',
-    fontWeight: '600',
-  },
-  addressHint: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginBottom: 12,
-    lineHeight: 18,
-  },
-  textInput: {
-    height: 48,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    fontSize: 13,
-    fontFamily: 'monospace',
-    color: '#111827',
-    backgroundColor: '#F9FAFB',
-  },
-  securityWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
     gap: 8,
-    paddingHorizontal: 16,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 20,
   },
-  securityText: {
+  errorText: {
     fontSize: 12,
-    color: '#6B7280',
-    textAlign: 'center',
+    color: '#B91C1C',
     flex: 1,
+  },
+  securityBox: {
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    padding: 16,
+  },
+  securityHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
+  securityTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#15803D',
+  },
+  securityDesc: {
+    fontSize: 12,
+    lineHeight: 18,
+    color: '#166534',
   },
 });

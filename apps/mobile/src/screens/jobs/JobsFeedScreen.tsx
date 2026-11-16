@@ -147,14 +147,16 @@ export const JobsFeedScreen: React.FC<JobsFeedScreenProps> = ({
             Verified Freelance Marketplace
           </Text>
         </View>
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={onCreateJobPress}
-          style={[styles.postJobPill, { backgroundColor: colors.brand.primary }]}
-        >
-          <Icon name="plus" size={14} color="#FFFFFF" />
-          <Text style={styles.postJobPillText}>New Job</Text>
-        </TouchableOpacity>
+        {isClient && (
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={onCreateJobPress}
+            style={[styles.postJobPill, { backgroundColor: colors.brand.primary }]}
+          >
+            <Icon name="plus" size={14} color="#FFFFFF" />
+            <Text style={styles.postJobPillText}>New Job</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={{ paddingHorizontal: spacing.layout.screenHorizontalPadding, flex: 1 }}>

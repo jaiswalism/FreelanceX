@@ -209,6 +209,13 @@ export class WalletService {
    * Disconnects the active wallet session.
    */
   public static async disconnect(): Promise<void> {
+    try {
+      const { WalletConnectService } = await import('./walletConnectService');
+      await WalletConnectService.disconnect();
+    } catch {
+      // ignore
+    }
+
     this.state = {
       isConnected: false,
       address: null,
