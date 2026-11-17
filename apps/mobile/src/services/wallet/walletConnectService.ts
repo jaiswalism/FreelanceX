@@ -124,24 +124,16 @@ export class WalletConnectService {
         const universalLink = `${walletConfig.universalLink}${encodedUri}`;
 
         try {
-          // Attempt direct app scheme first (enabled by <queries> in AndroidManifest)
-          const canOpen = await Linking.canOpenURL(directDeepLink).catch(() => false);
-          if (canOpen) {
-            await Linking.openURL(directDeepLink);
-          } else {
-            // Fallback to universal link or raw wc link
-            const canOpenUniversal = await Linking.canOpenURL(universalLink).catch(() => false);
-            if (canOpenUniversal) {
-              await Linking.openURL(universalLink);
-            } else {
-              // Try opening raw uri or direct scheme
-              await Linking.openURL(directDeepLink).catch(async () => {
-                await Linking.openURL(`wc:${encodedUri}`).catch(() => {
-                  Linking.openURL(walletConfig.playStore);
-                });
+          // Directly open app deep link (MetaMask, Trust, etc.)
+          await Linking.openURL(directDeepLink).catch(async () => {
+            // Fallback to universal link
+            await Linking.openURL(universalLink).catch(async () => {
+              // Fallback to generic wc uri
+              await Linking.openURL(`wc:${encodedUri}`).catch(() => {
+                Linking.openURL(walletConfig.playStore);
               });
-            }
-          }
+            });
+          });
         } catch (err) {
           console.warn('Failed to launch wallet app:', err);
         }
