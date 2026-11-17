@@ -1,4 +1,7 @@
 import { prisma } from '../../database/prisma.js';
+import { createPublicClient, http } from 'viem';
+import { sepolia } from 'viem/chains';
+import { config } from '../../config/index.js';
 
 export class ProjectsService {
   public static async getUserProjects(userId: string) {
@@ -16,7 +19,11 @@ export class ProjectsService {
       orderBy: { updatedAt: 'desc' },
     });
 
-    return projects;
+    return projects.map((p) => ({
+      ...p,
+      paidMilestonesCount: p.milestones.filter((m) => m.status === 'PAID').length,
+      milestonesCount: p.milestones.length,
+    }));
   }
 
   public static async getProjectById(projectId: string, userId: string) {
@@ -39,7 +46,11 @@ export class ProjectsService {
       throw new Error('Unauthorized project access');
     }
 
-    return project;
+    return {
+      ...project,
+      paidMilestonesCount: project.milestones.filter((m) => m.status === 'PAID').length,
+      milestonesCount: project.milestones.length,
+    };
   }
 
   public static async syncOnChainProject(
@@ -124,6 +135,23 @@ export class ProjectsService {
     });
 
     if (!milestone) throw new Error('Milestone not found');
+
+    if (paymentTxHash) {
+      try {
+        const client = createPublicClient({
+          chain: sepolia,
+          transport: http(config.rpcUrl),
+        });
+        const receipt = await client.getTransactionReceipt({ hash: paymentTxHash as `0x${string}` });
+        if (receipt && receipt.status === 'reverted') {
+          throw new Error('On-chain payout transaction reverted. Milestone payment cannot be confirmed.');
+        }
+      } catch (err: any) {
+        if (err.message?.includes('reverted')) {
+          throw err;
+        }
+      }
+    }
 
     const updated = await prisma.projectMilestone.update({
       where: { id: milestone.id },

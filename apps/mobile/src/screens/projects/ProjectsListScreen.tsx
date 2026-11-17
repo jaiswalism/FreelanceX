@@ -84,7 +84,9 @@ export const ProjectsListScreen: React.FC<ProjectsListScreenProps> = ({
             <View style={styles.progressItem}>
               <Text style={{ color: colors.text.tertiary, fontSize: 11 }}>PROGRESS</Text>
               <Text style={{ color: colors.text.primary, fontSize: 14, fontWeight: '700' }}>
-                {item.paidMilestonesCount || 1} / {item.milestonesCount || 3} Milestones
+                {item.milestones
+                  ? `${item.milestones.filter((m: any) => m.status === 'PAID').length} / ${item.milestones.length}`
+                  : `${item.paidMilestonesCount ?? 0} / ${item.milestonesCount ?? 0}`} Milestones
               </Text>
             </View>
           </View>

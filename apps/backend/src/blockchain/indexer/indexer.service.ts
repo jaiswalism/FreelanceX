@@ -1,5 +1,5 @@
 import { createPublicClient, http, formatUnits } from 'viem';
-import { baseSepolia } from 'viem/chains';
+import { sepolia } from 'viem/chains';
 import { prisma } from '../../database/prisma.js';
 import { config } from '../../config/index.js';
 import { FREELANCER_ESCROW_ABI } from '../abi/escrowAbi.js';
@@ -11,7 +11,7 @@ export class BlockchainIndexer {
 
   constructor() {
     this.publicClient = createPublicClient({
-      chain: baseSepolia,
+      chain: sepolia,
       transport: http(config.rpcUrl),
     });
   }

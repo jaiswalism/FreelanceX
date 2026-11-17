@@ -241,6 +241,17 @@ export const ProjectDetailScreen: React.FC<ProjectDetailScreenProps> = ({
         data: approveCall.data,
       });
 
+      // Verify on-chain execution receipt before recording payout in database
+      const { publicClient } = await import('../../services/blockchain/client');
+      const receipt = await publicClient.waitForTransactionReceipt({
+        hash: payoutTxHash as `0x${string}`,
+        timeout: 60_000,
+      });
+
+      if (receipt.status !== 'success') {
+        throw new Error('On-chain payout transaction reverted. Escrow funds were not released.');
+      }
+
       const res = await ApiClient.approveMilestone(project.id, selectedMilestone.index, payoutTxHash);
       if (res.success) {
         Alert.alert('Milestone Approved! 🎉', `USDC payout released to freelancer!\n\nTx: ${payoutTxHash.substring(0, 10)}...`);

@@ -33,7 +33,7 @@ export const NETWORKS = {
         symbol: 'USDC',
       },
       escrow: {
-        address: '0x74239ad6bc5fb4f1b57eb056d3c75969b9651dd0' as `0x${string}`,
+        address: '0xcb4003d9f5c5793285780bb1ee969a40e3d40c39' as `0x${string}`,
       },
     },
     testnet: true,

@@ -272,7 +272,12 @@ contract FreelancerEscrow is ReentrancyGuard {
         if (milestoneIndex >= project.milestoneCount) revert InvalidMilestoneIndex();
 
         Milestone storage milestone = milestones[projectId][milestoneIndex];
-        if (milestone.status != MilestoneStatus.SUBMITTED) revert InvalidMilestoneState();
+        if (
+            milestone.status != MilestoneStatus.SUBMITTED &&
+            milestone.status != MilestoneStatus.FUNDED
+        ) {
+            revert InvalidMilestoneState();
+        }
 
         uint256 amountToRelease = milestone.amount;
         milestone.status = MilestoneStatus.PAID;
