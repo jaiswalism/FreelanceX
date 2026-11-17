@@ -71,11 +71,29 @@ export class ProjectsService {
       throw new Error('Only project client can record on-chain project initialization');
     }
 
+    if (fundedTxHash) {
+      try {
+        const client = createPublicClient({
+          chain: sepolia,
+          transport: http(config.rpcUrl),
+        });
+        const receipt = await client.getTransactionReceipt({ hash: fundedTxHash as `0x${string}` });
+        if (receipt && receipt.status === 'reverted') {
+          throw new Error('On-chain escrow funding transaction reverted.');
+        }
+      } catch (err: any) {
+        if (err.message?.includes('reverted')) {
+          throw err;
+        }
+      }
+    }
+
     const updated = await prisma.project.update({
       where: { id: projectId },
       data: {
         onChainProjectId,
         status: fundedTxHash ? 'FUNDED' : 'INITIALIZED',
+        escrowContractAddress: config.escrowAddress,
         ...(fundedTxHash ? { fundedTxHash } : {}),
       },
       include: { milestones: true },

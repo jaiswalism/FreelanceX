@@ -128,12 +128,12 @@ export class MobileEscrowService {
     return keccak256(toHex(id));
   }
 
-  public static encodeApproveUsdc(amountUsdc: string): { to: `0x${string}`; data: `0x${string}` } {
+  public static encodeApproveUsdc(amountUsdc: string, spender?: string): { to: `0x${string}`; data: `0x${string}` } {
     const rawAmount = parseUnits(amountUsdc, 6);
     const data = encodeFunctionData({
       abi: ERC20_APPROVE_ABI,
       functionName: 'approve',
-      args: [this.getEscrowContractAddress(), rawAmount],
+      args: [(spender as `0x${string}`) || this.getEscrowContractAddress(), rawAmount],
     });
     return {
       to: this.getUsdcContractAddress(),
@@ -158,7 +158,8 @@ export class MobileEscrowService {
     projectId: string,
     freelancerAddress: `0x${string}`,
     totalAmountUsdc: string,
-    milestoneAmountsUsdc: string[]
+    milestoneAmountsUsdc: string[],
+    targetContract?: string
   ): { to: `0x${string}`; data: `0x${string}` } {
     const bytes32ProjectId = this.stringToBytes32(projectId);
     const rawTotalAmount = parseUnits(totalAmountUsdc, 6);
@@ -171,7 +172,7 @@ export class MobileEscrowService {
     });
 
     return {
-      to: this.getEscrowContractAddress(),
+      to: (targetContract as `0x${string}`) || this.getEscrowContractAddress(),
       data,
     };
   }
@@ -179,7 +180,8 @@ export class MobileEscrowService {
   public static encodeSubmitMilestone(
     projectId: string,
     milestoneIndex: number,
-    deliverableHash: string
+    deliverableHash: string,
+    targetContract?: string
   ): { to: `0x${string}`; data: `0x${string}` } {
     const bytes32ProjectId = this.stringToBytes32(projectId);
     const data = encodeFunctionData({
@@ -189,14 +191,15 @@ export class MobileEscrowService {
     });
 
     return {
-      to: this.getEscrowContractAddress(),
+      to: (targetContract as `0x${string}`) || this.getEscrowContractAddress(),
       data,
     };
   }
 
   public static encodeApproveMilestone(
     projectId: string,
-    milestoneIndex: number
+    milestoneIndex: number,
+    targetContract?: string
   ): { to: `0x${string}`; data: `0x${string}` } {
     const bytes32ProjectId = this.stringToBytes32(projectId);
     const data = encodeFunctionData({
@@ -206,7 +209,7 @@ export class MobileEscrowService {
     });
 
     return {
-      to: this.getEscrowContractAddress(),
+      to: (targetContract as `0x${string}`) || this.getEscrowContractAddress(),
       data,
     };
   }
@@ -214,7 +217,8 @@ export class MobileEscrowService {
   public static encodeRaiseDispute(
     projectId: string,
     milestoneIndex: number,
-    reason: string
+    reason: string,
+    targetContract?: string
   ): { to: `0x${string}`; data: `0x${string}` } {
     const bytes32ProjectId = this.stringToBytes32(projectId);
     const data = encodeFunctionData({
@@ -224,16 +228,16 @@ export class MobileEscrowService {
     });
 
     return {
-      to: this.getEscrowContractAddress(),
+      to: (targetContract as `0x${string}`) || this.getEscrowContractAddress(),
       data,
     };
   }
 
-  public static async fetchOnChainProjectState(projectId: string) {
+  public static async fetchOnChainProjectState(projectId: string, targetContract?: string) {
     try {
       const bytes32ProjectId = this.stringToBytes32(projectId);
       const res = await publicClient.readContract({
-        address: this.getEscrowContractAddress(),
+        address: (targetContract as `0x${string}`) || this.getEscrowContractAddress(),
         abi: ESCROW_ABI,
         functionName: 'projects',
         args: [bytes32ProjectId],
