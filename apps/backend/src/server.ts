@@ -29,6 +29,10 @@ app.get('/health', (_req: Request, res: Response) => {
       chainId: config.chainId,
       rpcUrl: config.rpcUrl,
     },
+    contracts: {
+      escrow: config.escrowAddress,
+      usdc: config.usdcAddress,
+    },
   });
 });
 
