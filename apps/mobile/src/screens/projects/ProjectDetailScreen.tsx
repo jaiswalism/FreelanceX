@@ -161,6 +161,31 @@ export const ProjectDetailScreen: React.FC<ProjectDetailScreenProps> = ({
     }
   };
 
+  const handleMintTestUsdc = async () => {
+    try {
+      if (!walletState.isConnected || !walletState.address) {
+        Alert.alert('Wallet Required', 'Please connect your EVM wallet first.');
+        return;
+      }
+      setSubmittingAction(true);
+      const mintCall = MobileEscrowService.encodeMintTestUsdc(walletState.address as `0x${string}`, '1000');
+      const { WalletConnectService } = await import('../../services/wallet/walletConnectService');
+      const txHash = await WalletConnectService.sendTransaction({
+        from: walletState.address,
+        to: mintCall.to,
+        data: mintCall.data,
+      });
+      Alert.alert(
+        'Test USDC Minted! 🪙',
+        `1,000 Test USDC minted to your wallet on Sepolia!\n\nTx: ${txHash.substring(0, 10)}...${txHash.substring(txHash.length - 8)}`
+      );
+    } catch (error) {
+      Alert.alert('Minting Failed', error instanceof Error ? error.message : 'Failed to mint test USDC');
+    } finally {
+      setSubmittingAction(false);
+    }
+  };
+
   const handleSubmitDeliverable = async () => {
     if (!inputDeliverableUri.trim()) {
       Alert.alert('Required', 'Please enter a valid link or IPFS hash for your deliverable.');
@@ -556,6 +581,15 @@ export const ProjectDetailScreen: React.FC<ProjectDetailScreenProps> = ({
                 loading={submittingAction}
                 style={{ marginTop: 10 }}
               />
+              <TouchableOpacity
+                onPress={handleMintTestUsdc}
+                disabled={submittingAction}
+                style={{ marginTop: 10, alignSelf: 'center', padding: 6 }}
+              >
+                <Text style={{ color: colors.brand.primary, fontSize: 13, fontWeight: '700' }}>
+                  Need Sepolia USDC? Tap to Mint 1,000 Free USDC 🪙
+                </Text>
+              </TouchableOpacity>
             </View>
           )}
         </Card>

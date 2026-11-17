@@ -15,6 +15,19 @@ export const ERC20_APPROVE_ABI = [
   },
 ] as const;
 
+export const ERC20_MINT_ABI = [
+  {
+    type: 'function',
+    name: 'mint',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'to', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+    ],
+    outputs: [],
+  },
+] as const;
+
 export const ESCROW_ABI = [
   {
     type: 'function',
@@ -121,6 +134,19 @@ export class MobileEscrowService {
       abi: ERC20_APPROVE_ABI,
       functionName: 'approve',
       args: [this.getEscrowContractAddress(), rawAmount],
+    });
+    return {
+      to: this.getUsdcContractAddress(),
+      data,
+    };
+  }
+
+  public static encodeMintTestUsdc(recipient: `0x${string}`, amountUsdc: string = '1000'): { to: `0x${string}`; data: `0x${string}` } {
+    const rawAmount = parseUnits(amountUsdc, 6);
+    const data = encodeFunctionData({
+      abi: ERC20_MINT_ABI,
+      functionName: 'mint',
+      args: [recipient, rawAmount],
     });
     return {
       to: this.getUsdcContractAddress(),

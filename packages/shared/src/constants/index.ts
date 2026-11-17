@@ -16,12 +16,12 @@ export const NETWORKS = {
     },
     contracts: {
       usdc: {
-        address: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238' as `0x${string}`,
+        address: '0x7a41e8dd0fdf0bf6ea984602e8e148f7e409a8de' as `0x${string}`,
         decimals: 6,
         symbol: 'USDC',
       },
       escrow: {
-        address: '0x0000000000000000000000000000000000000000' as `0x${string}`,
+        address: '0x74239ad6bc5fb4f1b57eb056d3c75969b9651dd0' as `0x${string}`,
       },
     },
     testnet: true,
