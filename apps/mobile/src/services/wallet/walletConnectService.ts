@@ -156,7 +156,7 @@ export class WalletConnectService {
               chains: [SEPOLIA_CAIP_ID],
               events: ['chainChanged', 'accountsChanged'],
               rpcMap: {
-                [SEPOLIA_CHAIN_ID]: 'https://rpc.sepolia.org',
+                [SEPOLIA_CHAIN_ID]: 'https://ethereum-sepolia-rpc.publicnode.com',
               },
             },
           },

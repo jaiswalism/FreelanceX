@@ -10,6 +10,7 @@ import {
   StyleSheet,
   Linking,
   Share,
+  ActivityIndicator,
 } from 'react-native';
 import { defaultTheme } from '../../theme';
 import { Card } from '../../components/Card';
@@ -38,7 +39,10 @@ export const WalletScreen: React.FC<WalletScreenProps> = ({
     const unsubscribe = WalletService.subscribe((state) => {
       setWallet(state);
     });
-    WalletService.refreshBalances().catch(() => {});
+    setLoading(true);
+    WalletService.refreshBalances().finally(() => {
+      setLoading(false);
+    });
     return () => {
       unsubscribe();
     };
@@ -149,22 +153,36 @@ export const WalletScreen: React.FC<WalletScreenProps> = ({
             <Text style={styles.balanceUnit}>USDC</Text>
           </View>
 
-          <View style={styles.secondaryBalanceRow}>
-            <Text style={styles.ethBalanceText}>
-              Gas: {wallet.ethBalance || '0.0000'} ETH
-            </Text>
-            {wallet.blockNumber && (
-              <Text style={styles.blockText}>Block #{wallet.blockNumber}</Text>
-            )}
+          <View style={styles.gasPillRow}>
+            <View style={styles.gasPill}>
+              <View style={styles.gasTag}>
+                <Text style={styles.gasTagText}>GAS FUEL</Text>
+              </View>
+              <Text style={styles.gasValueText}>
+                {wallet.ethBalance || '0.0000'} ETH
+              </Text>
+            </View>
+
+            {wallet.blockNumber ? (
+              <View style={styles.blockPill}>
+                <Text style={styles.blockLabelText}>SEPOLIA</Text>
+                <Text style={styles.blockNumberText}>#{wallet.blockNumber}</Text>
+              </View>
+            ) : null}
           </View>
 
           <View style={styles.heroActionRow}>
             <TouchableOpacity
               activeOpacity={0.85}
               onPress={handleRefresh}
+              disabled={loading}
               style={styles.heroBtnPrimary}
             >
-              <Icon name="clock" size={14} color={colors.brand.primary} />
+              {loading ? (
+                <ActivityIndicator size="small" color={colors.brand.primary} />
+              ) : (
+                <Icon name="clock" size={14} color={colors.brand.primary} />
+              )}
               <Text style={[styles.heroBtnPrimaryText, { color: colors.brand.primary }]}>
                 {loading ? 'Refreshing...' : 'Refresh Balance'}
               </Text>
@@ -339,7 +357,7 @@ const styles = StyleSheet.create({
   balanceSection: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    marginBottom: 6,
+    marginBottom: 10,
   },
   balancePrefix: {
     fontSize: 24,
@@ -359,20 +377,51 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.8)',
     marginLeft: 6,
   },
-  secondaryBalanceRow: {
+  gasPillRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 18,
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginBottom: 16,
   },
-  ethBalanceText: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.85)',
-    fontWeight: '600',
+  gasPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  blockText: {
+  gasTag: {
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  gasTagText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  gasValueText: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  blockPill: {
+    alignItems: 'flex-end',
+  },
+  blockLabelText: {
+    fontSize: 8,
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  blockNumberText: {
     fontSize: 11,
-    color: 'rgba(255, 255, 255, 0.65)',
+    color: '#FFFFFF',
+    fontWeight: '700',
     fontFamily: 'monospace',
   },
   heroActionRow: {

@@ -8,8 +8,20 @@ export const NETWORKS = {
       decimals: 18,
     },
     rpcUrls: {
-      default: { http: ['https://rpc.sepolia.org', 'https://ethereum-sepolia-rpc.publicnode.com'] },
-      public: { http: ['https://rpc.sepolia.org', 'https://ethereum-sepolia-rpc.publicnode.com'] },
+      default: {
+        http: [
+          'https://ethereum-sepolia-rpc.publicnode.com',
+          'https://rpc.sepolia.ethpandaops.io',
+          'https://gateway.tenderly.co/public/sepolia',
+        ],
+      },
+      public: {
+        http: [
+          'https://ethereum-sepolia-rpc.publicnode.com',
+          'https://rpc.sepolia.ethpandaops.io',
+          'https://gateway.tenderly.co/public/sepolia',
+        ],
+      },
     },
     blockExplorers: {
       default: { name: 'Etherscan', url: 'https://sepolia.etherscan.io' },

@@ -1,4 +1,4 @@
-import { createPublicClient, http, defineChain, formatUnits, parseUnits, formatEther } from 'viem';
+import { createPublicClient, http, fallback, defineChain, formatUnits, parseUnits, formatEther } from 'viem';
 import { NETWORKS } from '@freelancerx/shared';
 
 export const sepoliaChain = defineChain({
@@ -10,13 +10,17 @@ export const sepoliaChain = defineChain({
   testnet: true,
 });
 
+const sepoliaTransports = NETWORKS.SEPOLIA.rpcUrls.default.http.map((url) =>
+  http(url, {
+    timeout: 5000,
+    retryCount: 2,
+    retryDelay: 500,
+  })
+);
+
 export const publicClient = createPublicClient({
   chain: sepoliaChain,
-  transport: http(NETWORKS.SEPOLIA.rpcUrls.default.http[0], {
-    timeout: 3500,
-    retryCount: 1,
-    retryDelay: 500,
-  }),
+  transport: fallback(sepoliaTransports, { rank: false }),
 });
 
 // Minimal ERC20 ABI for USDC queries

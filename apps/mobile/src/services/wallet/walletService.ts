@@ -186,16 +186,38 @@ export class WalletService {
     try {
       const [chainStatus, usdcRes, ethRes] = await Promise.all([
         fetchChainStatus().catch(() => ({ blockNumber: this.state.blockNumber, latencyMs: null })),
-        fetchUsdcBalance(this.state.address as `0x${string}`).catch(() => ({ formatted: this.state.usdcBalance })),
-        fetchEthBalance(this.state.address as `0x${string}`).catch(() => ({ formatted: this.state.ethBalance })),
+        fetchUsdcBalance(this.state.address as `0x${string}`).catch((e) => ({
+          success: false,
+          error: String(e),
+          rawBalance: '0',
+          formatted: this.state.usdcBalance,
+        })),
+        fetchEthBalance(this.state.address as `0x${string}`).catch((e) => ({
+          success: false,
+          error: String(e),
+          rawBalance: '0',
+          formatted: this.state.ethBalance,
+        })),
       ]);
+
+      const updatedUsdc = usdcRes.success
+        ? usdcRes.formatted
+        : this.state.usdcBalance !== '0.00'
+        ? this.state.usdcBalance
+        : usdcRes.formatted;
+
+      const updatedEth = ethRes.success
+        ? ethRes.formatted
+        : this.state.ethBalance !== '0.0000'
+        ? this.state.ethBalance
+        : ethRes.formatted;
 
       this.state = {
         ...this.state,
         blockNumber: ('blockNumber' in chainStatus && chainStatus.blockNumber) ? chainStatus.blockNumber : this.state.blockNumber,
         latencyMs: ('latencyMs' in chainStatus && chainStatus.latencyMs !== undefined) ? chainStatus.latencyMs : this.state.latencyMs,
-        usdcBalance: usdcRes.formatted,
-        ethBalance: ethRes.formatted,
+        usdcBalance: updatedUsdc,
+        ethBalance: updatedEth,
       };
       this.notify();
     } catch (err) {
