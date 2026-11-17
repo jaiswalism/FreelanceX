@@ -36,7 +36,7 @@ export class ProposalsController {
       }
 
       const jobId = req.params['jobId'] as string;
-      const proposals = await ProposalsService.getProposalsByJob(jobId, req.user.id);
+      const proposals = await ProposalsService.getProposalsByJob(jobId, req.user.id, req.user.address);
       res.json({ success: true, proposals });
     } catch (error) {
       res.status(403).json({ error: error instanceof Error ? error.message : 'Failed to fetch proposals' });
@@ -51,7 +51,7 @@ export class ProposalsController {
       }
 
       const proposalId = req.params['id'] as string;
-      const result = await ProposalsService.acceptProposal(proposalId, req.user.id);
+      const result = await ProposalsService.acceptProposal(proposalId, req.user.id, req.user.address);
       res.json({ success: true, ...result });
     } catch (error) {
       res.status(400).json({ error: error instanceof Error ? error.message : 'Failed to accept proposal' });

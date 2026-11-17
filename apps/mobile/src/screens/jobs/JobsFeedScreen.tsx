@@ -63,17 +63,8 @@ export const JobsFeedScreen: React.FC<JobsFeedScreenProps> = ({
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Filtering:
-  // In Freelancer mode: Person A posting a gig CANNOT see that gig in their freelancer account.
-  // In Client mode: Client sees their posted gigs (with Edit option) and market gigs.
+  // Filtering: All open marketplace gigs are visible. Search query filters title, desc, skills.
   const filteredJobs = jobs.filter((item: any) => {
-    const jobOwner = (item.client?.address || item.clientAddress || '').toLowerCase();
-    const isMyGig = currentAddress && jobOwner === currentAddress;
-
-    if (!isClient && isMyGig) {
-      return false; // Person A posting a gig should not see that gig in their freelancer account
-    }
-
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const matchTitle = item.title?.toLowerCase().includes(q);

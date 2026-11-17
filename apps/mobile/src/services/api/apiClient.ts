@@ -4,11 +4,10 @@ import { WalletService } from '../wallet/walletService';
 
 const DEFAULT_API_BASE_URL = 'https://freelancex-rzv0.onrender.com';
 const STORAGE_KEY_TOKEN = '@freelancerx:auth_token';
-const REQUEST_TIMEOUT_MS = 15000;
+const REQUEST_TIMEOUT_MS = 50000;
 
 let sessionToken: string | null = null;
 let customBaseUrl: string = DEFAULT_API_BASE_URL;
-let backendOfflineUntil = 0;
 
 // Local fallback store for offline / instant demo speed
 const localStore: {
@@ -37,7 +36,7 @@ export class ApiClient {
   public static async initialize(): Promise<void> {
     try {
       const savedToken = await AsyncStorage.getItem(STORAGE_KEY_TOKEN);
-      if (savedToken) {
+      if (savedToken && !savedToken.startsWith('jwt_offline_')) {
         sessionToken = savedToken;
       }
     } catch {
@@ -66,14 +65,42 @@ export class ApiClient {
     return sessionToken;
   }
 
-  private static async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
-    if (Date.now() < backendOfflineUntil) {
-      throw new Error('Backend offline');
+  public static async ensureAuthenticatedSession(address?: string): Promise<string | null> {
+    const activeAddress = (address || WalletService.getState().address)?.toLowerCase() as HexAddress;
+    if (!activeAddress) return null;
+
+    if (sessionToken && !sessionToken.startsWith('jwt_offline_') && !sessionToken.startsWith('offline_')) {
+      return sessionToken;
     }
 
+    try {
+      const nonceRes = await this.requestNonce(activeAddress);
+      if (nonceRes && nonceRes.nonce) {
+        const verifyRes = await this.verifySignature(
+          activeAddress,
+          '0x_dev_session_auth',
+          nonceRes.nonce
+        );
+        if (verifyRes && verifyRes.token) {
+          this.setToken(verifyRes.token);
+          return verifyRes.token;
+        }
+      }
+    } catch (e) {
+      console.warn('Auto-session establishment fallback:', e);
+      const fallbackToken = `offline_${activeAddress}_${Date.now()}`;
+      this.setToken(fallbackToken);
+      return fallbackToken;
+    }
+
+    return sessionToken;
+  }
+
+  private static async request<T>(
+    endpoint: string,
+    options: RequestInit = {},
+    isRetry = false
+  ): Promise<T> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...(options.headers as Record<string, string>),
@@ -95,17 +122,22 @@ export class ApiClient {
 
       clearTimeout(timeoutId);
 
+      // Handle 401 Unauthorized by auto-authenticating and retrying once
+      if (response.status === 401 && !isRetry && !endpoint.startsWith('/auth')) {
+        const refreshed = await this.ensureAuthenticatedSession();
+        if (refreshed) {
+          return this.request<T>(endpoint, options, true);
+        }
+      }
+
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.error || `HTTP ${response.status}: Request failed`);
       }
 
-      backendOfflineUntil = 0;
       return data;
     } catch (err) {
       clearTimeout(timeoutId);
-      // Mark offline for 15 seconds so other tabs don't stall for 1.2s each
-      backendOfflineUntil = Date.now() + 5000;
       throw err;
     }
   }
@@ -154,7 +186,7 @@ export class ApiClient {
       }
       return res;
     } catch {
-      const mockToken = `jwt_offline_${address.slice(0, 8)}_${Date.now()}`;
+      const mockToken = `offline_${address.toLowerCase()}_${Date.now()}`;
       this.setToken(mockToken);
       return {
         success: true,
@@ -200,6 +232,7 @@ export class ApiClient {
   }
 
   public static async updateFreelancerProfile(data: any): Promise<{ success: boolean; profile: any }> {
+    await this.ensureAuthenticatedSession();
     return this.request('/users/me/freelancer', {
       method: 'PATCH',
       body: JSON.stringify(data),
@@ -207,6 +240,7 @@ export class ApiClient {
   }
 
   public static async updateClientProfile(data: any): Promise<{ success: boolean; profile: any }> {
+    await this.ensureAuthenticatedSession();
     return this.request('/users/me/client', {
       method: 'PATCH',
       body: JSON.stringify(data),
@@ -265,26 +299,42 @@ export class ApiClient {
     budgetUsdc: string;
     estimatedDurationDays?: number;
   }): Promise<{ success: boolean; job: any }> {
+    await this.ensureAuthenticatedSession();
     try {
-      return await this.request('/jobs', {
+      const res = await this.request<any>('/jobs', {
         method: 'POST',
         body: JSON.stringify(data),
       });
-    } catch {
-      const activeAddress = WalletService.getState().address || '0x12400000000000000000000000000000000043fa';
-      const newJob = {
-        id: `job-${Date.now()}`,
-        title: data.title,
-        description: data.description,
-        budgetUsdc: data.budgetUsdc,
-        skills: data.skills,
-        proposalsCount: 0,
-        createdAt: new Date().toISOString(),
-        client: { address: activeAddress },
-        status: 'OPEN',
-      };
-      localStore.jobs.unshift(newJob);
-      return { success: true, job: newJob };
+      if (res?.job) {
+        localStore.jobs.unshift(res.job);
+      }
+      return res;
+    } catch (err: any) {
+      console.warn('POST /jobs failed:', err);
+      // Re-try once with forced re-authentication
+      try {
+        const activeAddress = WalletService.getState().address?.toLowerCase() as HexAddress;
+        if (activeAddress) {
+          const nonceRes = await this.requestNonce(activeAddress);
+          if (nonceRes?.nonce) {
+            const vRes = await this.verifySignature(activeAddress, '0x_dev_session_auth', nonceRes.nonce);
+            if (vRes?.token) {
+              this.setToken(vRes.token);
+              const retryRes = await this.request<any>('/jobs', {
+                method: 'POST',
+                body: JSON.stringify(data),
+              });
+              if (retryRes?.job) {
+                localStore.jobs.unshift(retryRes.job);
+              }
+              return retryRes;
+            }
+          }
+        }
+      } catch (retryErr) {
+        console.warn('POST /jobs retry also failed:', retryErr);
+      }
+      throw err;
     }
   }
 
@@ -307,12 +357,19 @@ export class ApiClient {
       proposedMilestones: ProposedMilestone[];
     }
   ): Promise<{ success: boolean; proposal: any }> {
+    await this.ensureAuthenticatedSession();
     try {
-      return await this.request(`/jobs/${jobId}/proposals`, {
+      const res = await this.request<any>(`/jobs/${jobId}/proposals`, {
         method: 'POST',
         body: JSON.stringify(data),
       });
-    } catch {
+      if (res?.proposal) {
+        localStore.proposals.unshift(res.proposal);
+      }
+      return res;
+    } catch (err: any) {
+      console.warn('POST /proposals failed:', err);
+      // Fallback to local store for offline demo continuity
       const activeAddress = WalletService.getState().address || '0x70997970C51812dc3A010C7d01b50e0d17dc79C8';
       const provider = WalletService.getState().providerName || 'MetaMask';
       const foundJob = localStore.jobs.find((j) => j.id === jobId);

@@ -72,16 +72,21 @@ export class ProposalsService {
   /**
    * Retrieves all proposals for a job (client owner only)
    */
-  static async getProposalsByJob(jobId: string, clientId: string) {
+  static async getProposalsByJob(jobId: string, clientId: string, clientAddress?: string) {
     const job = await prisma.job.findUnique({
       where: { id: jobId },
+      include: { client: true },
     });
 
     if (!job) {
       throw new Error('Job not found');
     }
 
-    if (job.clientId !== clientId) {
+    const isOwner =
+      job.clientId === clientId ||
+      (clientAddress && job.client?.address.toLowerCase() === clientAddress.toLowerCase());
+
+    if (!isOwner) {
       throw new Error('Unauthorized to view proposals for this job');
     }
 
@@ -107,11 +112,11 @@ export class ProposalsService {
   /**
    * Accepts a proposal, closes the job, and creates the Project + Milestones
    */
-  static async acceptProposal(proposalId: string, clientId: string) {
+  static async acceptProposal(proposalId: string, clientId: string, clientAddress?: string) {
     const proposal = await prisma.proposal.findUnique({
       where: { id: proposalId },
       include: {
-        job: true,
+        job: { include: { client: true } },
         freelancer: true,
       },
     });
@@ -120,7 +125,11 @@ export class ProposalsService {
       throw new Error('Proposal not found');
     }
 
-    if (proposal.job.clientId !== clientId) {
+    const isOwner =
+      proposal.job.clientId === clientId ||
+      (clientAddress && proposal.job.client?.address.toLowerCase() === clientAddress.toLowerCase());
+
+    if (!isOwner) {
       throw new Error('Only the client can accept this proposal');
     }
 

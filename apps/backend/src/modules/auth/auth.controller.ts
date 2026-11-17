@@ -17,7 +17,7 @@ export class AuthController {
         success: true,
         nonce: result.nonce,
         expiresAt: result.expiresAt,
-        message: `FreelancerX Auth Nonce: ${result.nonce}\nAddress: ${parsed.data.address}\nChainId: 84532`,
+        message: `FreelancerX Auth Nonce: ${result.nonce}\nAddress: ${parsed.data.address}\nChainId: 11155111`,
       });
     } catch (error) {
       res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to generate nonce' });

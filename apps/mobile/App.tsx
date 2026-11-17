@@ -56,6 +56,10 @@ export default function App() {
 
         setWalletState(state);
         if (state.isConnected && state.address) {
+          // Pre-authenticate session in background to guarantee live Neon database persistence
+          ApiClient.ensureAuthenticatedSession(state.address).catch((err) =>
+            console.warn('Background auto-auth failed:', err)
+          );
           setAuthStep('authenticated');
         } else {
           setAuthStep('onboarding');

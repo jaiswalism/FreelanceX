@@ -17,6 +17,7 @@ export const AuthVerifyRequestSchema = z.object({
 export const UpdateProfileSchema = z.object({
   displayName: z.string().min(2).max(50),
   bio: z.string().max(500).optional(),
+  description: z.string().max(1000).optional(),
   title: z.string().max(100).optional(),
   skills: z.array(z.string()).optional(),
   hourlyRate: z.number().nonnegative().optional(),
