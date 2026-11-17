@@ -1,6 +1,7 @@
 import { Linking } from 'react-native';
 import UniversalProvider from '@walletconnect/universal-provider';
 import { HexAddress } from '@freelancerx/shared';
+import { WalletService } from './walletService';
 
 const REOWN_PROJECT_ID = '2d2c2c6d98c3fb70090d1c59f804680c';
 const SEPOLIA_CHAIN_ID = 11155111;
@@ -219,5 +220,70 @@ export class WalletConnectService {
     );
 
     return signature;
+  }
+
+  /**
+   * Deep links directly into the user's connected wallet app (MetaMask, Trust, etc.)
+   * to bring the wallet to the foreground when an approval is requested.
+   */
+  public static async openConnectedWallet(): Promise<void> {
+    const providerName = WalletService.getState().providerName;
+    const config =
+      SUPPORTED_WALLETS.find(
+        (w) => w.name.toLowerCase() === providerName?.toLowerCase()
+      ) || SUPPORTED_WALLETS[0];
+
+    if (config) {
+      try {
+        const cleanScheme = config.scheme.split('?')[0] || config.scheme;
+        await Linking.openURL(cleanScheme).catch(async () => {
+          await Linking.openURL(config.universalLink).catch(() => {});
+        });
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  /**
+   * Sends an on-chain transaction via WalletConnect and automatically triggers
+   * deep linking into the connected wallet app on Android.
+   */
+  public static async sendTransaction(tx: {
+    from: string;
+    to: string;
+    data: string;
+    value?: string;
+  }): Promise<string> {
+    const provider = await this.getProvider();
+    if (!provider || !provider.session) {
+      throw new Error('No active wallet session. Please reconnect your wallet.');
+    }
+
+    // Launch wallet app on device so the user sees the confirmation modal
+    setTimeout(() => {
+      this.openConnectedWallet().catch(() => {});
+    }, 150);
+
+    const txHash = await provider.request<string>(
+      {
+        method: 'eth_sendTransaction',
+        params: [
+          {
+            from: tx.from,
+            to: tx.to,
+            data: tx.data,
+            value: tx.value || '0x0',
+          },
+        ],
+      },
+      SEPOLIA_CAIP_ID
+    );
+
+    if (!txHash) {
+      throw new Error('Transaction was rejected or no hash returned by wallet.');
+    }
+
+    return txHash;
   }
 }

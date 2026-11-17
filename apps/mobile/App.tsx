@@ -7,6 +7,8 @@ import {
   StyleSheet,
   StatusBar,
   ActivityIndicator,
+  BackHandler,
+  Alert,
 } from 'react-native';
 import { defaultTheme } from './src/theme';
 import { Icon, IconName } from './src/components/Icon';
@@ -84,6 +86,54 @@ export default function App() {
     };
   }, []);
 
+  // Support Android hardware back button across the whole app
+  useEffect(() => {
+    const handleHardwareBackPress = () => {
+      // If modal project details is open
+      if (selectedProjectId) {
+        setSelectedProjectId(null);
+        return true;
+      }
+
+      // If in sub-screens
+      if (activeTab === 'create_job' || activeTab === 'proposal' || activeTab === 'client_review') {
+        setEditingJob(null);
+        setActiveTab('jobs');
+        return true;
+      }
+
+      // If in other main tabs, return to jobs feed
+      if (activeTab !== 'jobs') {
+        setActiveTab('jobs');
+        return true;
+      }
+
+      // If in onboarding/auth flow
+      if (authStep === 'profile_setup') {
+        setAuthStep('select_role');
+        return true;
+      }
+      if (authStep === 'select_role') {
+        setAuthStep('connect_wallet');
+        return true;
+      }
+      if (authStep === 'connect_wallet') {
+        setAuthStep('onboarding');
+        return true;
+      }
+
+      // Root screen: allow default Android exit
+      return false;
+    };
+
+    const backSubscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      handleHardwareBackPress
+    );
+
+    return () => backSubscription.remove();
+  }, [selectedProjectId, activeTab, authStep]);
+
   // --- Auth Flow Renderers ---
   if (authStep === 'loading') {
     return (
@@ -131,10 +181,6 @@ export default function App() {
           setAuthStep('authenticated');
           setActiveTab('jobs');
         }}
-        onSkip={() => {
-          setAuthStep('authenticated');
-          setActiveTab('jobs');
-        }}
       />
     );
   }
@@ -176,10 +222,23 @@ export default function App() {
             isClient={isClient}
             onSelectJob={(job) => {
               setSelectedJob(job);
-              if (isClient) {
+              const jobOwner = (job.client?.address || job.clientAddress || '').toLowerCase();
+              const myAddress = (walletState.address || '').toLowerCase();
+              const isOwner = Boolean(myAddress && jobOwner && myAddress === jobOwner);
+
+              if (isOwner && isClient) {
+                // Publisher reviewing applicant proposals for their gig
                 setActiveTab('client_review');
-              } else {
+              } else if (!isClient) {
+                // Freelancer applying to the gig
                 setActiveTab('proposal');
+              } else {
+                // Client viewing another client's market gig in read-only details
+                Alert.alert(
+                  job.title || 'Marketplace Gig',
+                  `Budget: $${job.budgetUsdc} USDC\n\n${job.description}\n\nRequired Skills: ${job.skills?.join(', ') || 'N/A'}\n\nPublisher: ${jobOwner ? `${jobOwner.slice(0, 6)}...${jobOwner.slice(-4)}` : 'Verified Client'}`,
+                  [{ text: 'Close' }]
+                );
               }
             }}
             onCreateJobPress={() => {
@@ -228,7 +287,12 @@ export default function App() {
           <ClientProposalsScreen
             job={selectedJob}
             onBack={() => setActiveTab('jobs')}
-            onProjectCreated={() => setActiveTab('projects')}
+            onProjectCreated={(project: any) => {
+              if (project?.id) {
+                setSelectedProjectId(project.id);
+              }
+              setActiveTab('projects');
+            }}
           />
         );
       case 'bids':

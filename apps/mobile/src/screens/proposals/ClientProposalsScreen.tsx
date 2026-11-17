@@ -9,10 +9,12 @@ import {
   ActivityIndicator,
   StyleSheet,
   RefreshControl,
+  TouchableOpacity,
 } from 'react-native';
 import { defaultTheme } from '../../theme';
 import { Header, Card, Button, Icon, VerifiedReputationBadge } from '../../components';
 import { ApiClient } from '../../services/api/apiClient';
+import { WalletService } from '../../services/wallet/walletService';
 
 interface ClientProposalsScreenProps {
   job: any;
@@ -31,6 +33,11 @@ export const ClientProposalsScreen: React.FC<ClientProposalsScreenProps> = ({
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+
+  const walletState = WalletService.getState();
+  const currentAddress = walletState.address?.toLowerCase();
+  const jobOwnerAddress = (job?.client?.address || job?.clientAddress || '').toLowerCase();
+  const isPublisher = Boolean(currentAddress && jobOwnerAddress && currentAddress === jobOwnerAddress);
 
   const fetchProposals = async () => {
     if (!job?.id) return;
@@ -51,18 +58,40 @@ export const ClientProposalsScreen: React.FC<ClientProposalsScreenProps> = ({
   };
 
   useEffect(() => {
-    if (job?.id) {
+    if (job?.id && isPublisher) {
       fetchProposals();
     }
-  }, [job?.id]);
+  }, [job?.id, isPublisher]);
 
   const handleAcceptProposal = async (proposalId: string) => {
+    const proposal = proposals.find((p) => p.id === proposalId);
+    if (proposal && proposal.status === 'ACCEPTED') {
+      Alert.alert('Already Accepted', 'This proposal has already been accepted and initialized.');
+      return;
+    }
+
     try {
       setActionLoadingId(proposalId);
       const res = await ApiClient.acceptProposal(proposalId);
+
+      // Mark this proposal as ACCEPTED locally
+      setProposals((prev) =>
+        prev.map((p) => (p.id === proposalId ? { ...p, status: 'ACCEPTED' } : p))
+      );
+
       Alert.alert(
         'Proposal Accepted! 🎉',
-        'Project initialized with milestone escrow structure. Ready to fund on-chain.'
+        'Project initialized with milestone escrow structure. Opening Project Workspace to fund escrow...',
+        [
+          {
+            text: 'Go to Workspace',
+            onPress: () => {
+              if (res.project) {
+                onProjectCreated(res.project);
+              }
+            },
+          },
+        ]
       );
       if (res.project) {
         onProjectCreated(res.project);
@@ -73,6 +102,33 @@ export const ClientProposalsScreen: React.FC<ClientProposalsScreenProps> = ({
       setActionLoadingId(null);
     }
   };
+
+  if (!isPublisher) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background.app }}>
+        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+        <Header title="Proposals Restricted" onBack={onBack} />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+          <Icon name="shield" size={48} color="#EF4444" />
+          <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text.primary, marginTop: 16, textAlign: 'center' }}>
+            Access Restricted
+          </Text>
+          <Text style={{ fontSize: 14, color: colors.text.secondary, marginTop: 8, textAlign: 'center', lineHeight: 20 }}>
+            Only the client who published this gig can review applicants, view private bids, and fund milestone escrow.
+          </Text>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={onBack}
+            style={{ marginTop: 24, backgroundColor: colors.brand.primary, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12 }}
+          >
+            <Text style={{ color: '#FFFFFF', fontWeight: '700' }}>Return to Marketplace</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const hasAcceptedProposal = proposals.some((p) => p.status === 'ACCEPTED');
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background.app }}>
@@ -134,6 +190,7 @@ export const ClientProposalsScreen: React.FC<ClientProposalsScreenProps> = ({
             const profile = item.freelancer?.freelancerProfile;
             const displayName = profile?.displayName || 'Freelancer';
             const initial = displayName.charAt(0).toUpperCase();
+            const isAccepted = item.status === 'ACCEPTED';
 
             return (
               <Card key={item.id} style={styles.applicantCard}>
@@ -145,7 +202,9 @@ export const ClientProposalsScreen: React.FC<ClientProposalsScreenProps> = ({
                   <View style={{ flex: 1, marginLeft: 12 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                       <Text style={styles.applicantName}>{displayName}</Text>
-                      <Icon name="checkCircle" size={14} color="#10B981" />
+                      {profile?.completedProjectsCount > 0 && (
+                        <Icon name="checkCircle" size={14} color="#10B981" />
+                      )}
                     </View>
                     <Text style={styles.applicantTitle} numberOfLines={1}>
                       {profile?.title || 'Smart Contract Engineer'}
@@ -160,8 +219,8 @@ export const ClientProposalsScreen: React.FC<ClientProposalsScreenProps> = ({
                 {/* Reputation Badge */}
                 <View style={{ marginTop: 4 }}>
                   <VerifiedReputationBadge
-                    score={profile?.reputationScore || 94}
-                    isVerified={true}
+                    score={profile?.reputationScore || 0}
+                    isVerified={Boolean(profile?.completedProjectsCount > 0)}
                   />
                 </View>
 
@@ -185,11 +244,25 @@ export const ClientProposalsScreen: React.FC<ClientProposalsScreenProps> = ({
                 </View>
 
                 {/* Action CTA */}
-                <Button
-                  title="Accept Proposal & Fund Escrow"
-                  onPress={() => handleAcceptProposal(item.id)}
-                  loading={actionLoadingId === item.id}
-                />
+                {isAccepted ? (
+                  <View style={{ backgroundColor: '#ECFDF5', padding: 14, borderRadius: 12, alignItems: 'center' }}>
+                    <Text style={{ color: '#059669', fontWeight: '700', fontSize: 14 }}>
+                      ✅ Proposal Accepted & Awarded
+                    </Text>
+                  </View>
+                ) : hasAcceptedProposal ? (
+                  <View style={{ backgroundColor: '#F3F4F6', padding: 14, borderRadius: 12, alignItems: 'center' }}>
+                    <Text style={{ color: '#6B7280', fontWeight: '600', fontSize: 13 }}>
+                      Gig Awarded to Another Freelancer
+                    </Text>
+                  </View>
+                ) : (
+                  <Button
+                    title="Accept Proposal & Fund Escrow"
+                    onPress={() => handleAcceptProposal(item.id)}
+                    loading={actionLoadingId === item.id}
+                  />
+                )}
               </Card>
             );
           })

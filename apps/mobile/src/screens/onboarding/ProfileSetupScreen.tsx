@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, ScrollView, SafeAreaView, StatusBar,
-  TouchableOpacity, Alert, StyleSheet,
+  Alert, StyleSheet,
 } from 'react-native';
 import { defaultTheme } from '../../theme';
 import { Card, Button, Input, Icon } from '../../components';
@@ -11,20 +11,22 @@ interface ProfileSetupScreenProps {
   role: 'client' | 'freelancer';
   walletAddress: string;
   onComplete: () => void;
-  onSkip: () => void;
+  onSkip?: () => void;
 }
 
 export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
-  role, walletAddress, onComplete, onSkip,
+  role, walletAddress, onComplete,
 }) => {
   const { colors, spacing } = defaultTheme;
   const isFreelancer = role === 'freelancer';
 
-  // Common
+  // Common compulsory fields
   const [displayName, setDisplayName] = useState('');
+  const [email, setEmail] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
 
-  // Freelancer-specific
+  // Freelancer-specific compulsory & optional
+  const [resumeUrl, setResumeUrl] = useState('');
   const [title, setTitle] = useState('');
   const [bio, setBio] = useState('');
   const [skillsInput, setSkillsInput] = useState('');
@@ -43,6 +45,20 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
       return;
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email.trim() || !emailRegex.test(email.trim())) {
+      Alert.alert('Required', 'Please provide a valid contact email address.');
+      return;
+    }
+
+    if (isFreelancer && !resumeUrl.trim()) {
+      Alert.alert(
+        'Required',
+        'Please provide a link to your resume, portfolio, or previous work (e.g. GitHub, portfolio site, or Google Drive link).'
+      );
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -50,6 +66,8 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
         const skills = skillsInput.split(',').map(s => s.trim()).filter(Boolean);
         await ApiClient.updateFreelancerProfile({
           displayName: displayName.trim(),
+          email: email.trim(),
+          resumeUrl: resumeUrl.trim(),
           title: title.trim() || undefined,
           bio: bio.trim() || undefined,
           skills: skills.length > 0 ? skills : undefined,
@@ -59,6 +77,7 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
       } else {
         await ApiClient.updateClientProfile({
           displayName: displayName.trim(),
+          email: email.trim(),
           companyName: companyName.trim() || undefined,
           description: description.trim() || undefined,
           website: website.trim() || undefined,
@@ -129,10 +148,19 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
             onChangeText={setDisplayName}
           />
           <Input
+            label="Email Address *"
+            placeholder="you@domain.com (compulsory for escrow alerts)"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+          <Input
             label="Profile Photo URL (optional)"
             placeholder="https://... link to your photo"
             value={avatarUrl}
             onChangeText={setAvatarUrl}
+            autoCapitalize="none"
           />
         </Card>
 
@@ -140,6 +168,13 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
         {isFreelancer && (
           <Card style={{ padding: 18 }}>
             <Text style={styles.sectionLabel}>Professional Details</Text>
+            <Input
+              label="Resume / Portfolio / Previous Work Link *"
+              placeholder="https://github.com/name or portfolio/resume URL"
+              value={resumeUrl}
+              onChangeText={setResumeUrl}
+              autoCapitalize="none"
+            />
             <Input
               label="Professional Title"
               placeholder="e.g. Senior Solidity Engineer & Smart Contract Auditor"
@@ -195,6 +230,7 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
               placeholder="https://yourcompany.com"
               value={website}
               onChangeText={setWebsite}
+              autoCapitalize="none"
             />
           </Card>
         )}
@@ -203,7 +239,7 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
         <View style={styles.infoBanner}>
           <Icon name="shield" size={16} color="#5B4DFF" />
           <Text style={styles.infoText}>
-            Your profile is public on FreelancerX. Never include private keys or sensitive financial data.
+            Your credentials and previous work help build verified on-chain reputation. Never include private keys.
           </Text>
         </View>
 
@@ -213,9 +249,6 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
           onPress={handleSubmit}
           loading={loading}
         />
-        <TouchableOpacity activeOpacity={0.7} onPress={onSkip} style={styles.skipBtn}>
-          <Text style={styles.skipText}>Skip for now — I'll set up later</Text>
-        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );

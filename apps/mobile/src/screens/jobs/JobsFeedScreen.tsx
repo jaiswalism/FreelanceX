@@ -202,7 +202,7 @@ export const JobsFeedScreen: React.FC<JobsFeedScreenProps> = ({
               style={styles.applyRow}
             >
               <Text style={[styles.applyText, { color: colors.brand.primary }]}>
-                {isClient ? 'View Proposals' : 'Apply with Proposal'}
+                {isClient ? 'View Details' : 'Apply with Proposal'}
               </Text>
               <Icon name="chevronRight" size={14} color={colors.brand.primary} />
             </TouchableOpacity>

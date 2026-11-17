@@ -31,12 +31,14 @@ export class ReputationService {
     const totalSpentUsdc = user.clientProfile?.totalSpentUsdc || 0;
 
     // Calculate Verified On-Chain Reputation Score (0 - 100)
-    let reputationScore = 50; // Base score for connected EVM wallet
-    reputationScore += Math.min(completedAsFreelancer * 10, 30);
-    reputationScore += Math.min(completedAsClient * 5, 15);
-    if (Number(totalEarnedUsdc) > 1000) reputationScore += 5;
-
-    reputationScore = Math.min(reputationScore, 100);
+    let reputationScore = 0;
+    if (totalCompletedProjects > 0) {
+      reputationScore = 50; // Base score once verified project completed
+      reputationScore += Math.min(completedAsFreelancer * 10, 30);
+      reputationScore += Math.min(completedAsClient * 5, 15);
+      if (Number(totalEarnedUsdc) > 1000) reputationScore += 5;
+      reputationScore = Math.min(reputationScore, 100);
+    }
 
     // On-Chain Anchors List
     const verifiedAnchors = user.freelancerProjects.map((p: any) => ({

@@ -9,21 +9,22 @@ interface VerifiedReputationBadgeProps {
 }
 
 export const VerifiedReputationBadge: React.FC<VerifiedReputationBadgeProps> = ({
-  score = 88,
-  isVerified = true,
+  score = 0,
+  isVerified = false,
 }) => {
   const { colors, radii } = defaultTheme;
+  const isNew = !score || score === 0;
 
   return (
     <View style={[styles.container, { borderColor: colors.border.subtle, borderRadius: radii.medium }]}>
       <View style={styles.badgeRow}>
-        <View style={styles.iconCircle}>
-          <Icon name="sparkles" size={14} color={colors.brand.primary} />
+        <View style={[styles.iconCircle, isNew && { backgroundColor: '#F3F4F6' }]}>
+          <Icon name={isNew ? 'user' : 'sparkles'} size={14} color={isNew ? '#6B7280' : colors.brand.primary} />
         </View>
-        <Text style={[styles.scoreText, { color: colors.text.primary }]}>
-          Score: {score}
+        <Text style={[styles.scoreText, { color: isNew ? '#4B5563' : colors.text.primary }]}>
+          {isNew ? 'New Account (0 Completed)' : `Score: ${score}`}
         </Text>
-        {isVerified && (
+        {isVerified && !isNew && (
           <View style={[styles.verifiedTag, { backgroundColor: colors.semantic.successBackground, borderRadius: radii.pill }]}>
             <Icon name="shield" size={12} color={colors.semantic.success} style={{ marginRight: 4 }} />
             <Text style={[styles.verifiedText, { color: colors.semantic.success }]}>

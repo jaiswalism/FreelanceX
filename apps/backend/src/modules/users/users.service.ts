@@ -31,6 +31,8 @@ export class UsersService {
     userId: string,
     data: {
       displayName?: string;
+      email?: string;
+      resumeUrl?: string;
       bio?: string;
       title?: string;
       skills?: string[];
@@ -38,9 +40,14 @@ export class UsersService {
       avatarUrl?: string;
     }
   ) {
+    let effectiveBio = data.bio;
+    if (data.email) {
+      effectiveBio = effectiveBio ? `${effectiveBio}\nContact Email: ${data.email}` : `Contact Email: ${data.email}`;
+    }
+
     const updateData: any = {};
     if (data.displayName !== undefined) updateData.displayName = data.displayName;
-    if (data.bio !== undefined) updateData.bio = data.bio;
+    if (effectiveBio !== undefined) updateData.bio = effectiveBio;
     if (data.title !== undefined) updateData.title = data.title;
     if (data.skills !== undefined) updateData.skills = data.skills;
     if (data.hourlyRate !== undefined) updateData.hourlyRate = data.hourlyRate;
@@ -52,7 +59,7 @@ export class UsersService {
       create: {
         userId,
         displayName: data.displayName || 'Freelancer',
-        bio: data.bio,
+        bio: effectiveBio,
         title: data.title,
         skills: data.skills || [],
         hourlyRate: data.hourlyRate ?? null,
@@ -62,6 +69,18 @@ export class UsersService {
         portfolio: true,
       },
     });
+
+    if (data.resumeUrl) {
+      await prisma.portfolioItem.create({
+        data: {
+          freelancerId: profile.id,
+          title: 'Resume & Portfolio',
+          description: `Resume / previous work link: ${data.resumeUrl}`,
+          link: data.resumeUrl,
+          tags: data.skills || ['Verified Work'],
+        },
+      });
+    }
 
     return profile;
   }
@@ -73,16 +92,22 @@ export class UsersService {
     userId: string,
     data: {
       displayName?: string;
+      email?: string;
       companyName?: string;
       description?: string;
       website?: string;
       avatarUrl?: string;
     }
   ) {
+    let effectiveDesc = data.description;
+    if (data.email) {
+      effectiveDesc = effectiveDesc ? `${effectiveDesc}\nContact Email: ${data.email}` : `Contact Email: ${data.email}`;
+    }
+
     const updateData: any = {};
     if (data.displayName !== undefined) updateData.displayName = data.displayName;
     if (data.companyName !== undefined) updateData.companyName = data.companyName;
-    if (data.description !== undefined) updateData.description = data.description;
+    if (effectiveDesc !== undefined) updateData.description = effectiveDesc;
     if (data.website !== undefined) updateData.website = data.website;
     if (data.avatarUrl !== undefined) updateData.avatarUrl = data.avatarUrl;
 
@@ -93,7 +118,7 @@ export class UsersService {
         userId,
         displayName: data.displayName || 'Client',
         companyName: data.companyName,
-        description: data.description,
+        description: effectiveDesc,
         website: data.website,
         avatarUrl: data.avatarUrl,
       },

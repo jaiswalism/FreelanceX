@@ -112,71 +112,50 @@ export const ProjectDetailScreen: React.FC<ProjectDetailScreenProps> = ({
         return;
       }
 
+      const escrowContract = MobileEscrowService.getEscrowContractAddress();
+      if (!escrowContract || escrowContract === '0x0000000000000000000000000000000000000000') {
+        Alert.alert(
+          'Escrow Contract Not Deployed',
+          'The FreelancerEscrow smart contract address is currently 0x0000...0000 on Ethereum Sepolia.\n\nPlease deploy FreelancerEscrow.sol or configure ESCROW_CONTRACT_ADDRESS to execute live on-chain funding.'
+        );
+        return;
+      }
+
       const onChainId = project.onChainProjectId || MobileEscrowService.stringToBytes32(project.id);
       const freelancerAddress = (project.freelancer?.address || '0x70997970C51812dc3A010C7d01b50e0d17dc79C8') as `0x${string}`;
       const totalAmount = project.totalAmountUsdc?.toString() || '1000';
       const milestoneAmounts = project.milestones?.map((m: any) => m.amountUsdc?.toString() || '500') || ['500', '500'];
 
-      // Attempt live wallet transaction via WalletConnect
-      let txHash = '';
-      try {
-        const { WalletConnectService } = await import('../../services/wallet/walletConnectService');
-        const provider = await WalletConnectService.getProvider();
+      const { WalletConnectService } = await import('../../services/wallet/walletConnectService');
 
-        if (provider && provider.session) {
-          // 1. Prepare Approve USDC Call
-          const approveCall = MobileEscrowService.encodeApproveUsdc(totalAmount);
-          await provider.request<string>(
-            {
-              method: 'eth_sendTransaction',
-              params: [
-                {
-                  from: walletState.address,
-                  to: approveCall.to,
-                  data: approveCall.data,
-                },
-              ],
-            },
-            'eip155:11155111'
-          );
+      // 1. Prepare and send Approve USDC call (prompts wallet app via deep link)
+      const approveCall = MobileEscrowService.encodeApproveUsdc(totalAmount);
+      await WalletConnectService.sendTransaction({
+        from: walletState.address,
+        to: approveCall.to,
+        data: approveCall.data,
+      });
 
-          // 2. Prepare Create and Fund Project Call
-          const fundCall = MobileEscrowService.encodeCreateAndFundProject(
-            project.id,
-            freelancerAddress,
-            totalAmount,
-            milestoneAmounts
-          );
-          txHash = await provider.request<string>(
-            {
-              method: 'eth_sendTransaction',
-              params: [
-                {
-                  from: walletState.address,
-                  to: fundCall.to,
-                  data: fundCall.data,
-                },
-              ],
-            },
-            'eip155:11155111'
-          );
-        }
-      } catch (wcErr: any) {
-        console.warn('On-chain wallet transaction notice:', wcErr);
-      }
-
-      if (!txHash) {
-        // Fallback simulation hash if running in test environment
-        txHash = `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
-      }
+      // 2. Prepare and send Create and Fund Project call (prompts wallet app via deep link)
+      const fundCall = MobileEscrowService.encodeCreateAndFundProject(
+        project.id,
+        freelancerAddress,
+        totalAmount,
+        milestoneAmounts
+      );
+      const txHash = await WalletConnectService.sendTransaction({
+        from: walletState.address,
+        to: fundCall.to,
+        data: fundCall.data,
+      });
 
       const syncRes = await ApiClient.syncOnChainProject(project.id, onChainId, txHash);
       if (syncRes.success) {
-        Alert.alert('Escrow Funded! 🚀', `Project funded on Ethereum Sepolia! Tx: ${txHash.substring(0, 10)}...`);
+        Alert.alert('Escrow Funded! 🚀', `Project funded on Ethereum Sepolia!\n\nTx: ${txHash.substring(0, 10)}...${txHash.substring(txHash.length - 8)}`);
         fetchProjectDetails();
       }
     } catch (error) {
-      Alert.alert('Funding Failed', error instanceof Error ? error.message : 'Transaction failed');
+      Alert.alert('Funding Failed', error instanceof Error ? error.message : 'Transaction failed or rejected by wallet');
     } finally {
       setSubmittingAction(false);
     }
@@ -215,47 +194,37 @@ export const ProjectDetailScreen: React.FC<ProjectDetailScreenProps> = ({
   const handleApproveMilestone = async () => {
     try {
       setSubmittingAction(true);
-
-      // Attempt live wallet transaction for milestone release
-      let payoutTxHash = '';
-      try {
-        if (walletState.isConnected && walletState.address) {
-          const { WalletConnectService } = await import('../../services/wallet/walletConnectService');
-          const provider = await WalletConnectService.getProvider();
-          if (provider && provider.session) {
-            const approveCall = MobileEscrowService.encodeApproveMilestone(project.id, selectedMilestone.index);
-            payoutTxHash = await provider.request<string>(
-              {
-                method: 'eth_sendTransaction',
-                params: [
-                  {
-                    from: walletState.address,
-                    to: approveCall.to,
-                    data: approveCall.data,
-                  },
-                ],
-              },
-              'eip155:11155111'
-            );
-          }
-        }
-      } catch (wcErr) {
-        console.warn('Milestone payout on-chain call notice:', wcErr);
+      if (!walletState.isConnected || !walletState.address) {
+        Alert.alert('Wallet Required', 'Please connect your EVM wallet.');
+        return;
       }
 
-      if (!payoutTxHash) {
-        payoutTxHash = `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
+      const escrowContract = MobileEscrowService.getEscrowContractAddress();
+      if (!escrowContract || escrowContract === '0x0000000000000000000000000000000000000000') {
+        Alert.alert(
+          'Escrow Contract Not Deployed',
+          'FreelancerEscrow smart contract address is currently 0x0000...0000 on Ethereum Sepolia.'
+        );
+        return;
       }
+
+      const { WalletConnectService } = await import('../../services/wallet/walletConnectService');
+      const approveCall = MobileEscrowService.encodeApproveMilestone(project.id, selectedMilestone.index);
+      const payoutTxHash = await WalletConnectService.sendTransaction({
+        from: walletState.address,
+        to: approveCall.to,
+        data: approveCall.data,
+      });
 
       const res = await ApiClient.approveMilestone(project.id, selectedMilestone.index, payoutTxHash);
       if (res.success) {
-        Alert.alert('Milestone Approved! 🎉', `USDC payout released to freelancer! Tx: ${payoutTxHash.substring(0, 10)}...`);
+        Alert.alert('Milestone Approved! 🎉', `USDC payout released to freelancer!\n\nTx: ${payoutTxHash.substring(0, 10)}...`);
         setActionType(null);
         setSelectedMilestone(null);
         fetchProjectDetails();
       }
     } catch (error) {
-      Alert.alert('Approval Error', error instanceof Error ? error.message : 'Could not approve milestone');
+      Alert.alert('Approval Error', error instanceof Error ? error.message : 'Transaction failed or rejected by wallet');
     } finally {
       setSubmittingAction(false);
     }
@@ -475,7 +444,9 @@ export const ProjectDetailScreen: React.FC<ProjectDetailScreenProps> = ({
             <View style={styles.onchainField}>
               <Text style={styles.onchainLabel}>Escrow Contract Address</Text>
               <Text style={styles.onchainCode}>
-                {MobileEscrowService.getEscrowContractAddress()}
+                {MobileEscrowService.getEscrowContractAddress() === '0x0000000000000000000000000000000000000000'
+                  ? '0x0000...0000 (Pending Sepolia Deployment)'
+                  : MobileEscrowService.getEscrowContractAddress()}
               </Text>
             </View>
 
@@ -568,8 +539,8 @@ export const ProjectDetailScreen: React.FC<ProjectDetailScreenProps> = ({
 
           <View style={{ marginTop: 12 }}>
             <VerifiedReputationBadge
-              score={project.freelancer?.freelancerProfile?.reputationScore ?? 92}
-              isVerified={true}
+              score={project.freelancer?.freelancerProfile?.reputationScore ?? 0}
+              isVerified={Boolean(project.freelancer?.freelancerProfile?.completedProjectsCount > 0)}
             />
           </View>
 
