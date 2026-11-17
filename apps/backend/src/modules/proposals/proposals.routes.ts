@@ -6,6 +6,7 @@ const router = Router();
 
 router.post('/jobs/:jobId/proposals', authenticateUser as any, ProposalsController.submitProposal as any);
 router.get('/jobs/:jobId/proposals', authenticateUser as any, ProposalsController.getProposalsByJob as any);
+router.get('/proposals/me', authenticateUser as any, ProposalsController.getMyProposals as any);
 router.post('/proposals/:id/accept', authenticateUser as any, ProposalsController.acceptProposal as any);
 router.post('/proposals/:id/reject', authenticateUser as any, ProposalsController.rejectProposal as any);
 

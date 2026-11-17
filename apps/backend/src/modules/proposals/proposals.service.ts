@@ -192,6 +192,26 @@ export class ProposalsService {
   }
 
   /**
+   * Retrieves all proposals submitted by a freelancer (with job info)
+   */
+  static async getMyProposals(freelancerId: string) {
+    return prisma.proposal.findMany({
+      where: { freelancerId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        job: {
+          select: {
+            id: true,
+            title: true,
+            budgetUsdc: true,
+            status: true,
+          },
+        },
+      },
+    });
+  }
+
+  /**
    * Rejects a proposal
    */
   static async rejectProposal(proposalId: string, clientId: string) {

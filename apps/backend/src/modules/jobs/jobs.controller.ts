@@ -54,6 +54,21 @@ export class JobsController {
     }
   }
 
+  static async updateJob(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const jobId = req.params['id'] as string;
+      const job = await JobsService.updateJob(jobId, req.user.id, req.body);
+      res.json({ success: true, job });
+    } catch (error) {
+      res.status(400).json({ error: error instanceof Error ? error.message : 'Failed to update job' });
+    }
+  }
+
   static async closeJob(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       if (!req.user) {

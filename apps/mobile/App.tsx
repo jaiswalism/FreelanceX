@@ -13,6 +13,7 @@ import { Icon, IconName } from './src/components/Icon';
 import { OnboardingScreen } from './src/screens/onboarding/OnboardingScreen';
 import { ConnectWalletScreen } from './src/screens/onboarding/ConnectWalletScreen';
 import { RoleSelectScreen } from './src/screens/onboarding/RoleSelectScreen';
+import { ProfileSetupScreen } from './src/screens/onboarding/ProfileSetupScreen';
 import { WalletScreen } from './src/screens/wallet/WalletScreen';
 import { JobsFeedScreen } from './src/screens/jobs/JobsFeedScreen';
 import { CreateJobScreen } from './src/screens/jobs/CreateJobScreen';
@@ -33,7 +34,7 @@ type TabType =
   | 'proposal'
   | 'client_review';
 
-type AuthStep = 'loading' | 'onboarding' | 'connect_wallet' | 'select_role' | 'authenticated';
+type AuthStep = 'loading' | 'onboarding' | 'connect_wallet' | 'select_role' | 'profile_setup' | 'authenticated';
 
 export default function App() {
   const { colors, radii } = defaultTheme;
@@ -111,6 +112,22 @@ export default function App() {
         walletAddress={walletState.address || ''}
         providerName={walletState.providerName || 'MetaMask'}
         onRoleSelected={() => {
+          setAuthStep('profile_setup');
+        }}
+      />
+    );
+  }
+
+  if (authStep === 'profile_setup') {
+    return (
+      <ProfileSetupScreen
+        role={walletState.role}
+        walletAddress={walletState.address || ''}
+        onComplete={() => {
+          setAuthStep('authenticated');
+          setActiveTab('jobs');
+        }}
+        onSkip={() => {
           setAuthStep('authenticated');
           setActiveTab('jobs');
         }}
@@ -146,6 +163,7 @@ export default function App() {
             onRoleChanged={() => {
               setActiveTab('jobs');
             }}
+            onEditProfile={() => setAuthStep('profile_setup')}
           />
         );
       case 'jobs':
@@ -186,9 +204,12 @@ export default function App() {
           />
         );
       case 'proposal':
+        if (!selectedJob) {
+          return null;
+        }
         return (
           <ProposalSubmitScreen
-            job={selectedJob || ApiClient.getLocalJobs()[0]}
+            job={selectedJob}
             onBack={() => setActiveTab('jobs')}
             onSubmitted={() => {
               setActiveTab('bids');
@@ -196,9 +217,12 @@ export default function App() {
           />
         );
       case 'client_review':
+        if (!selectedJob) {
+          return null;
+        }
         return (
           <ClientProposalsScreen
-            job={selectedJob || ApiClient.getLocalJobs()[0]}
+            job={selectedJob}
             onBack={() => setActiveTab('jobs')}
             onProjectCreated={() => setActiveTab('projects')}
           />

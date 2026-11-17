@@ -101,11 +101,11 @@ export const ESCROW_ABI = [
 
 export class MobileEscrowService {
   public static getEscrowContractAddress(): `0x${string}` {
-    return (NETWORKS.BASE_SEPOLIA.contracts as any).escrow?.address || ('0x0000000000000000000000000000000000000000' as `0x${string}`);
+    return (NETWORKS.SEPOLIA.contracts as any).escrow?.address || ('0x0000000000000000000000000000000000000000' as `0x${string}`);
   }
 
   public static getUsdcContractAddress(): `0x${string}` {
-    return NETWORKS.BASE_SEPOLIA.contracts.usdc.address as `0x${string}`;
+    return NETWORKS.SEPOLIA.contracts.usdc.address as `0x${string}`;
   }
 
   public static stringToBytes32(id: string): `0x${string}` {

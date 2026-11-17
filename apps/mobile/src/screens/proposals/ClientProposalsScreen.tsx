@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   StyleSheet,
+  RefreshControl,
 } from 'react-native';
 import { defaultTheme } from '../../theme';
 import { Header, Card, Button, Icon, VerifiedReputationBadge } from '../../components';
@@ -28,44 +29,24 @@ export const ClientProposalsScreen: React.FC<ClientProposalsScreenProps> = ({
 
   const [proposals, setProposals] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   const fetchProposals = async () => {
+    if (!job?.id) return;
     try {
-      setLoading(true);
+      if (proposals.length === 0 && !refreshing) setLoading(true);
       const res = await ApiClient.getProposalsByJob(job.id);
-      if (res.proposals && res.proposals.length > 0) {
+      if (res && Array.isArray(res.proposals)) {
         setProposals(res.proposals);
       } else {
-        throw new Error('No proposals found');
+        setProposals([]);
       }
     } catch {
-      // Fallback sample proposal for UI testing
-      setProposals([
-        {
-          id: 'prop-1',
-          freelancer: {
-            address: '0x71C...392A',
-            freelancerProfile: {
-              displayName: 'Alex Rivers',
-              title: 'Senior Smart Contract & Security Architect',
-              rating: 5.0,
-              completedProjectsCount: 14,
-              reputationScore: 94,
-            },
-          },
-          coverLetter: 'I have built and audited 10+ milestone escrow protocols on Ethereum Sepolia. Can complete deliverables cleanly in 14 days with full Foundry invariants.',
-          proposedPriceUsdc: '2500',
-          proposedDurationDays: 14,
-          status: 'PENDING',
-          milestonePlan: [
-            { description: 'Architecture & Escrow Contract', amountUsdc: '1250', durationDays: 7 },
-            { description: 'Testing, Invariants & Security Review', amountUsdc: '1250', durationDays: 7 },
-          ],
-        },
-      ]);
+      setProposals([]);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -110,6 +91,16 @@ export const ClientProposalsScreen: React.FC<ClientProposalsScreenProps> = ({
           paddingBottom: 48,
         }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              fetchProposals();
+            }}
+            tintColor={colors.brand.primary}
+          />
+        }
       >
         {/* Banner */}
         <View style={styles.summaryBar}>

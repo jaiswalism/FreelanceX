@@ -225,7 +225,7 @@ export const MyBidsScreen: React.FC<MyBidsScreenProps> = ({
                     <View style={styles.bidCardHeader}>
                       <View style={{ flex: 1, marginRight: 10 }}>
                         <Text style={styles.bidJobTitle} numberOfLines={1}>
-                          {item.job?.title || 'Smart Contract Milestone Escrow'}
+                          {item.job?.title || 'Proposal'}
                         </Text>
                         <Text style={styles.bidDate}>
                           Submitted on {new Date(item.createdAt || Date.now()).toLocaleDateString()}

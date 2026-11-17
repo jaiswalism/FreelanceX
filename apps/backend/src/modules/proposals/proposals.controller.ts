@@ -58,6 +58,19 @@ export class ProposalsController {
     }
   }
 
+  static async getMyProposals(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+      const proposals = await ProposalsService.getMyProposals(req.user.id);
+      res.json({ success: true, proposals });
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to fetch proposals' });
+    }
+  }
+
   static async rejectProposal(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       if (!req.user) {

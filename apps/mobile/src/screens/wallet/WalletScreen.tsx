@@ -21,11 +21,13 @@ import { WalletService, WalletState } from '../../services/wallet/walletService'
 interface WalletScreenProps {
   onDisconnect?: () => void;
   onRoleChanged?: () => void;
+  onEditProfile?: () => void;
 }
 
 export const WalletScreen: React.FC<WalletScreenProps> = ({
   onDisconnect,
   onRoleChanged,
+  onEditProfile,
 }) => {
   const { colors, radii } = defaultTheme;
   const [wallet, setWallet] = useState<WalletState>(WalletService.getState());
@@ -231,6 +233,15 @@ export const WalletScreen: React.FC<WalletScreenProps> = ({
             variant="secondary"
             onPress={handleToggleRole}
           />
+
+          {onEditProfile && (
+            <Button
+              title="Edit Profile & Portfolio"
+              variant="outline"
+              onPress={onEditProfile}
+              style={{ marginTop: 10 }}
+            />
+          )}
         </Card>
 
         {/* Disconnect Action */}

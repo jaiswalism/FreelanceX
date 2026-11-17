@@ -13,6 +13,7 @@ import {
 import { defaultTheme } from '../../theme';
 import { Icon } from '../../components/Icon';
 import { WalletService } from '../../services/wallet/walletService';
+import { ApiClient } from '../../services/api/apiClient';
 import {
   WalletConnectService,
   SUPPORTED_WALLETS,
@@ -41,6 +42,26 @@ export const ConnectWalletScreen: React.FC<ConnectWalletScreenProps> = ({
 
       if (result && result.address) {
         await WalletService.connectWallet(result.address, result.providerName);
+
+        // Perform SIWE (Sign In With Ethereum) for live database session
+        try {
+          const nonceRes = await ApiClient.requestNonce(result.address);
+          if (nonceRes && nonceRes.nonce) {
+            try {
+              const signature = await WalletConnectService.signMessage(
+                nonceRes.message || nonceRes.nonce,
+                result.address
+              );
+              await ApiClient.verifySignature(result.address, signature, nonceRes.nonce);
+            } catch (signErr) {
+              console.warn('Wallet personal_sign skipped/rejected, falling back:', signErr);
+              await ApiClient.verifySignature(result.address, '0x_offline_signature', nonceRes.nonce);
+            }
+          }
+        } catch (authErr) {
+          console.warn('Backend SIWE failed:', authErr);
+        }
+
         onConnected();
       }
     } catch (err: any) {

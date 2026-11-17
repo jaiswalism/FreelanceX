@@ -167,6 +167,39 @@ export class JobsService {
   }
 
   /**
+   * Updates an existing job listing (owner only)
+   */
+  static async updateJob(
+    jobId: string,
+    clientId: string,
+    data: {
+      title?: string;
+      description?: string;
+      skills?: string[];
+      budgetUsdc?: string;
+      estimatedDurationDays?: number;
+    }
+  ) {
+    const job = await prisma.job.findUnique({ where: { id: jobId } });
+    if (!job) throw new Error('Job not found');
+    if (job.clientId !== clientId) throw new Error('Only the job owner can edit this gig');
+
+    const updateData: any = { ...data };
+    if (data.budgetUsdc) {
+      updateData.budgetBaseUnits = parseUnits(data.budgetUsdc, 6).toString();
+    }
+
+    return prisma.job.update({
+      where: { id: jobId },
+      data: updateData,
+      include: {
+        client: { select: { id: true, address: true, clientProfile: true } },
+        _count: { select: { proposals: true } },
+      },
+    });
+  }
+
+  /**
    * Closes a job listing
    */
   static async closeJob(jobId: string, clientId: string) {

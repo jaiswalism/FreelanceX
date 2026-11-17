@@ -4,7 +4,7 @@ import { WalletService } from '../wallet/walletService';
 
 const DEFAULT_API_BASE_URL = 'https://freelancex-rzv0.onrender.com';
 const STORAGE_KEY_TOKEN = '@freelancerx:auth_token';
-const REQUEST_TIMEOUT_MS = 1200;
+const REQUEST_TIMEOUT_MS = 15000;
 
 let sessionToken: string | null = null;
 let customBaseUrl: string = DEFAULT_API_BASE_URL;
@@ -18,101 +18,9 @@ const localStore: {
   messages: Record<string, any[]>;
   disputes: any[];
 } = {
-  jobs: [
-    {
-      id: 'job-1',
-      title: 'Ethereum Sepolia Escrow Smart Contract Audit',
-      description: 'Need experienced Solidity security researcher to audit milestone escrow contracts on Sepolia.',
-      budgetUsdc: '2500',
-      skills: ['Solidity', 'Foundry', 'Security', 'Sepolia'],
-      proposalsCount: 3,
-      createdAt: new Date().toISOString(),
-      client: { address: '0x12400000000000000000000000000000000043fa' },
-      status: 'OPEN',
-    },
-    {
-      id: 'job-2',
-      title: 'React Native Android Mobile Escrow UI',
-      description: 'Build sleek, friendly mobile interfaces for wallet interaction, dispute arbitration & deliverables.',
-      budgetUsdc: '1800',
-      skills: ['React Native', 'TypeScript', 'Viem', 'Mobile'],
-      proposalsCount: 5,
-      createdAt: new Date().toISOString(),
-      client: { address: '0x12400000000000000000000000000000000043fa' },
-      status: 'OPEN',
-    },
-    {
-      id: 'job-3',
-      title: 'Full-Stack Blockchain Indexer & Notification Worker',
-      description: 'Integrate real-time Viem event subscriber with PostgreSQL event reconciliation and push notifications.',
-      budgetUsdc: '3200',
-      skills: ['Node.js', 'PostgreSQL', 'Viem', 'Prisma'],
-      proposalsCount: 2,
-      createdAt: new Date().toISOString(),
-      client: { address: '0x29500000000000000000000000000000000078ab' },
-      status: 'OPEN',
-    },
-  ],
-  proposals: [
-    {
-      id: 'prop-1',
-      jobId: 'job-1',
-      freelancer: {
-        id: 'user-freelancer',
-        address: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
-        freelancerProfile: {
-          displayName: 'Bob (Solidity Specialist)',
-          rating: '4.95',
-          completedProjectsCount: 14,
-          verifiedProjectsCount: 12,
-        },
-      },
-      coverLetter: 'I have 4+ years of Solidity audit experience and have audited over 30 smart contracts on Base and Optimism.',
-      proposedPriceUsdc: '2500',
-      proposedDurationDays: 14,
-      status: 'PENDING',
-      milestonePlan: [
-        { title: 'Core Contract Review', description: 'Reentrancy, access controls, arithmetic checks', amountUsdc: '1250', durationDays: 7 },
-        { title: 'Invariant Fuzzing & Report', description: 'Comprehensive Foundry fuzz tests & executive summary', amountUsdc: '1250', durationDays: 7 },
-      ],
-      createdAt: new Date().toISOString(),
-    },
-  ],
-  projects: [
-    {
-      id: 'proj-1',
-      title: 'Ethereum Sepolia Escrow Smart Contract Audit',
-      status: 'IN_PROGRESS',
-      totalAmountUsdc: '2500',
-      milestonesCount: 2,
-      paidMilestonesCount: 0,
-      client: { address: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266' },
-      freelancer: { address: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8' },
-      job: { title: 'Security Audit & Invariant Fuzzing' },
-      onChainProjectId: '0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b',
-      fundedTxHash: '0xabc123def4567890abc123def4567890abc123def4567890abc123def4567890',
-      milestones: [
-        {
-          index: 0,
-          title: 'Milestone 1: Architectural Design & Core Review',
-          description: 'Reentrancy, access control, logic invariance analysis',
-          amountUsdc: '1250',
-          status: 'PENDING',
-          deliverableDescription: null,
-          deliverableUri: null,
-        },
-        {
-          index: 1,
-          title: 'Milestone 2: Invariant Fuzzing & Audit Delivery',
-          description: 'Foundry fuzzing suite & formal executive report',
-          amountUsdc: '1250',
-          status: 'PENDING',
-          deliverableDescription: null,
-          deliverableUri: null,
-        },
-      ],
-    },
-  ],
+  jobs: [],
+  proposals: [],
+  projects: [],
   messages: {} as Record<string, any[]>,
   disputes: [] as any[],
 };
@@ -197,7 +105,7 @@ export class ApiClient {
     } catch (err) {
       clearTimeout(timeoutId);
       // Mark offline for 15 seconds so other tabs don't stall for 1.2s each
-      backendOfflineUntil = Date.now() + 15000;
+      backendOfflineUntil = Date.now() + 5000;
       throw err;
     }
   }
@@ -329,7 +237,7 @@ export class ApiClient {
 
       const qs = searchParams.toString();
       const res = await this.request<any>(`/jobs${qs ? `?${qs}` : ''}`);
-      if (res.jobs && res.jobs.length > 0) return res;
+      if (res && Array.isArray(res.jobs)) return res;
       return { success: true, jobs: localStore.jobs, pagination: { total: localStore.jobs.length } };
     } catch {
       let filtered = localStore.jobs;
@@ -384,8 +292,8 @@ export class ApiClient {
     try {
       return await this.request(`/jobs/${jobId}`);
     } catch {
-      const found = localStore.jobs.find((j) => j.id === jobId) || localStore.jobs[0];
-      return { success: true, job: found };
+      const found = localStore.jobs.find((j) => j.id === jobId);
+      return { success: true, job: found || null };
     }
   }
 
@@ -407,9 +315,11 @@ export class ApiClient {
     } catch {
       const activeAddress = WalletService.getState().address || '0x70997970C51812dc3A010C7d01b50e0d17dc79C8';
       const provider = WalletService.getState().providerName || 'MetaMask';
+      const foundJob = localStore.jobs.find((j) => j.id === jobId);
       const newProposal = {
         id: `prop-${Date.now()}`,
         jobId,
+        job: foundJob ? { id: foundJob.id, title: foundJob.title, budgetUsdc: foundJob.budgetUsdc } : { id: jobId, title: 'Escrow Project' },
         freelancer: {
           id: `freelancer-${activeAddress.slice(2, 8)}`,
           address: activeAddress,
@@ -466,7 +376,7 @@ export class ApiClient {
         : localStore.proposals;
       return {
         success: true,
-        proposals: matched.length > 0 ? matched : localStore.proposals,
+        proposals: matched,
       };
     }
   }
@@ -478,7 +388,7 @@ export class ApiClient {
       const matched = localStore.proposals.filter((p) => p.jobId === jobId);
       return {
         success: true,
-        proposals: matched.length > 0 ? matched : localStore.proposals,
+        proposals: matched,
       };
     }
   }
@@ -492,16 +402,17 @@ export class ApiClient {
         prop.status = 'ACCEPTED';
       }
 
+      const jobTitle = prop?.job?.title || 'Milestone Escrow Project';
       const newProject: any = {
         id: `proj-${Date.now()}`,
-        title: 'Smart Contract Escrow Project',
+        title: jobTitle,
         status: 'INITIALIZED',
         totalAmountUsdc: prop?.proposedPriceUsdc || '2500',
         milestonesCount: prop?.milestonePlan?.length || 2,
         paidMilestonesCount: 0,
-        client: { address: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266' },
+        client: { address: WalletService.getState().address || '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266' },
         freelancer: prop?.freelancer || { address: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8' },
-        job: { title: 'Ethereum Sepolia Milestone Escrow' },
+        job: { title: jobTitle },
         onChainProjectId: '0xmock_onchain_id',
         fundedTxHash: '',
         milestones: (prop?.milestonePlan || []).map((m: any, idx: number) => ({

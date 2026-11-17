@@ -43,7 +43,7 @@ export const JobsFeedScreen: React.FC<JobsFeedScreenProps> = ({
     try {
       if (jobs.length === 0 && !refreshing) setLoading(true);
       const res = await ApiClient.listJobs({ query: searchQuery.trim() || undefined });
-      if (res.jobs && res.jobs.length > 0) {
+      if (res && Array.isArray(res.jobs)) {
         setJobs(res.jobs);
       }
     } catch {
