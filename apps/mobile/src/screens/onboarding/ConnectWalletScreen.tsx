@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { defaultTheme } from '../../theme';
 import { Icon } from '../../components/Icon';
 import { WalletService } from '../../services/wallet/walletService';
@@ -22,7 +23,7 @@ import {
 
 interface ConnectWalletScreenProps {
   onBack: () => void;
-  onConnected: () => void;
+  onConnected: (hasProfile?: boolean) => void;
 }
 
 export const ConnectWalletScreen: React.FC<ConnectWalletScreenProps> = ({
@@ -44,6 +45,7 @@ export const ConnectWalletScreen: React.FC<ConnectWalletScreenProps> = ({
         await WalletService.connectWallet(result.address, result.providerName);
 
         // Perform SIWE (Sign In With Ethereum) for live database session
+        let hasProfile = false;
         try {
           const nonceRes = await ApiClient.requestNonce(result.address);
           if (nonceRes && nonceRes.nonce) {
@@ -52,17 +54,73 @@ export const ConnectWalletScreen: React.FC<ConnectWalletScreenProps> = ({
                 nonceRes.message || nonceRes.nonce,
                 result.address
               );
-              await ApiClient.verifySignature(result.address, signature, nonceRes.nonce);
+              const authRes = await ApiClient.verifySignature(result.address, signature, nonceRes.nonce);
+              if (authRes?.user) {
+                const u = authRes.user;
+                const fp = u.freelancerProfile;
+                const cp = u.clientProfile;
+                if (
+                  (fp?.displayName && !fp.displayName.startsWith('Freelancer_')) ||
+                  fp?.contactEmail ||
+                  (cp?.companyName && !cp.companyName.startsWith('Client_')) ||
+                  cp?.contactEmail
+                ) {
+                  hasProfile = true;
+                }
+              }
             } catch (signErr) {
               console.warn('Wallet personal_sign skipped/rejected, falling back:', signErr);
-              await ApiClient.verifySignature(result.address, '0x_offline_signature', nonceRes.nonce);
+              const authRes = await ApiClient.verifySignature(result.address, '0x_offline_signature', nonceRes.nonce);
+              if (authRes?.user) {
+                const u = authRes.user;
+                const fp = u.freelancerProfile;
+                const cp = u.clientProfile;
+                if (
+                  (fp?.displayName && !fp.displayName.startsWith('Freelancer_')) ||
+                  fp?.contactEmail ||
+                  (cp?.companyName && !cp.companyName.startsWith('Client_')) ||
+                  cp?.contactEmail
+                ) {
+                  hasProfile = true;
+                }
+              }
             }
           }
         } catch (authErr) {
           console.warn('Backend SIWE failed:', authErr);
         }
 
-        onConnected();
+        // Also check if user profile exists via GET /users/:address
+        if (!hasProfile) {
+          try {
+            const userCheck = await ApiClient.getUserByAddress(result.address);
+            if (userCheck?.user) {
+              const u = userCheck.user;
+              const fp = u.freelancerProfile;
+              const cp = u.clientProfile;
+              if (
+                (fp?.displayName && !fp.displayName.startsWith('Freelancer_')) ||
+                fp?.contactEmail ||
+                (cp?.companyName && !cp.companyName.startsWith('Client_')) ||
+                cp?.contactEmail
+              ) {
+                hasProfile = true;
+              }
+            }
+          } catch {}
+        }
+
+        // Also check local storage flag
+        const localFlag = await AsyncStorage.getItem(`@freelancerx:profile_completed_${result.address.toLowerCase()}`);
+        if (localFlag === 'true') {
+          hasProfile = true;
+        }
+
+        if (hasProfile) {
+          await AsyncStorage.setItem(`@freelancerx:profile_completed_${result.address.toLowerCase()}`, 'true');
+        }
+
+        onConnected(hasProfile);
       }
     } catch (err: any) {
       console.warn('Wallet connection failed:', err);

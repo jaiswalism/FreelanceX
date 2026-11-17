@@ -155,7 +155,14 @@ export default function App() {
     return (
       <ConnectWalletScreen
         onBack={() => setAuthStep('onboarding')}
-        onConnected={() => setAuthStep('select_role')}
+        onConnected={(hasProfile) => {
+          if (hasProfile) {
+            setAuthStep('authenticated');
+            setActiveTab('jobs');
+          } else {
+            setAuthStep('select_role');
+          }
+        }}
       />
     );
   }

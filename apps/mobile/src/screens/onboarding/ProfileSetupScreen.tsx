@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, SafeAreaView, StatusBar,
-  Alert, StyleSheet,
+  Alert, StyleSheet, ActivityIndicator,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { defaultTheme } from '../../theme';
 import { Card, Button, Input, Icon } from '../../components';
 import { ApiClient } from '../../services/api/apiClient';
@@ -38,6 +39,58 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
   const [website, setWebsite] = useState('');
 
   const [loading, setLoading] = useState(false);
+  const [fetchingExisting, setFetchingExisting] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadProfile = async () => {
+      if (!walletAddress) return;
+      try {
+        setFetchingExisting(true);
+        const res = await ApiClient.getUserByAddress(walletAddress);
+        if (!isMounted || !res?.user) return;
+
+        const u = res.user;
+        if (isFreelancer && u.freelancerProfile) {
+          const fp = u.freelancerProfile;
+          if (fp.displayName && !fp.displayName.startsWith('Freelancer_')) {
+            setDisplayName(fp.displayName);
+          }
+          if (fp.contactEmail) setEmail(fp.contactEmail);
+          if (fp.bio) setBio(fp.bio);
+          if (fp.title) setTitle(fp.title);
+          if (fp.hourlyRate) setHourlyRate(fp.hourlyRate.toString());
+          if (fp.avatarUrl) setAvatarUrl(fp.avatarUrl);
+          if (Array.isArray(fp.skills) && fp.skills.length > 0) {
+            setSkillsInput(fp.skills.join(', '));
+          }
+          if (Array.isArray(fp.portfolio) && fp.portfolio.length > 0) {
+            setResumeUrl(fp.portfolio[0].projectUrl || '');
+          }
+        } else if (!isFreelancer && u.clientProfile) {
+          const cp = u.clientProfile;
+          if (cp.displayName && !cp.displayName.startsWith('Client_')) {
+            setDisplayName(cp.displayName);
+          }
+          if (cp.companyName) setCompanyName(cp.companyName);
+          if (cp.contactEmail) setEmail(cp.contactEmail);
+          if (cp.description) setDescription(cp.description);
+          if (cp.website) setWebsite(cp.website);
+          if (cp.avatarUrl) setAvatarUrl(cp.avatarUrl);
+        }
+      } catch (err) {
+        console.warn('Failed to pre-fill profile data:', err);
+      } finally {
+        if (isMounted) setFetchingExisting(false);
+      }
+    };
+
+    loadProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [walletAddress, isFreelancer]);
 
   const handleSubmit = async () => {
     if (!displayName.trim()) {
@@ -85,12 +138,19 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
         });
       }
 
+      if (walletAddress) {
+        await AsyncStorage.setItem(`@freelancerx:profile_completed_${walletAddress.toLowerCase()}`, 'true');
+      }
+
       Alert.alert(
         'Profile Created! 🎉',
         'Your profile has been saved. Clients can now see your credentials.',
         [{ text: 'Enter App', onPress: onComplete }]
       );
     } catch (err) {
+      if (walletAddress) {
+        await AsyncStorage.setItem(`@freelancerx:profile_completed_${walletAddress.toLowerCase()}`, 'true');
+      }
       // Even if backend fails, let them proceed (profile can be updated later)
       Alert.alert(
         'Profile Saved Locally',
@@ -132,6 +192,14 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
               ? 'Clients review your profile before hiring. A complete profile gets 3x more offers.'
               : 'Help freelancers understand your company and projects.'}
           </Text>
+          {fetchingExisting && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
+              <ActivityIndicator size="small" color={colors.brand.primary} />
+              <Text style={{ marginLeft: 6, fontSize: 12, color: colors.text.secondary }}>
+                Loading saved profile...
+              </Text>
+            </View>
+          )}
           <View style={styles.walletBadge}>
             <View style={styles.walletDot} />
             <Text style={styles.walletText}>{truncatedAddress}</Text>
