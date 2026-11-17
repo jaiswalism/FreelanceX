@@ -1,0 +1,4 @@
+@openzeppelin/contracts/=packages/contracts/lib/openzeppelin-contracts/contracts/
+forge-std/=packages/contracts/lib/forge-std/src/
+src/=packages/contracts/src/
+test/=packages/contracts/test/

@@ -2,8 +2,8 @@
 pragma solidity 0.8.28;
 
 import {Script, console} from "forge-std/Script.sol";
-import {FreelancerEscrow} from "../src/FreelancerEscrow.sol";
-import {MockUSDC} from "../test/mocks/MockUSDC.sol";
+import {FreelancerEscrow} from "src/FreelancerEscrow.sol";
+import {MockUSDC} from "test/mocks/MockUSDC.sol";
 
 contract DeployEscrowScript is Script {
     FreelancerEscrow public escrow;
